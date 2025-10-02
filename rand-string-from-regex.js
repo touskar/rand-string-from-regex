@@ -94,13 +94,59 @@ function randomStringFromRegex(pattern, options = {}) {
     while (i < str.length) {
       const char = str[i];
 
-      // Handle escaped characters \d, \w, \s, etc.
+      // Handle escaped characters \d, \w, \s, \xhh, \uhhhh, etc.
       if (char === '\\' && i + 1 < str.length) {
         i++;
         const escaped = str[i];
-        const escapeResult = handleEscape(escaped);
 
-        i++;
+        // Handle special multi-character escapes
+        let escapeResult;
+        let charsConsumed = 1;
+
+        if (escaped === 'x' && i + 2 < str.length) {
+          // Hex character \xhh
+          const hexCode = str.substring(i + 1, i + 3);
+          if (/^[0-9a-fA-F]{2}$/.test(hexCode)) {
+            escapeResult = String.fromCharCode(parseInt(hexCode, 16));
+            charsConsumed = 3; // \x + 2 hex digits
+          } else {
+            escapeResult = 'x'; // Invalid hex, treat as literal
+          }
+        } else if (escaped === 'u' && i + 1 < str.length) {
+          // Unicode \uhhhh or \u{hhhhh}
+          if (str[i + 1] === '{') {
+            // \u{hhhhh} format
+            const closeIndex = str.indexOf('}', i + 2);
+            if (closeIndex !== -1) {
+              const hexCode = str.substring(i + 2, closeIndex);
+              if (/^[0-9a-fA-F]+$/.test(hexCode)) {
+                escapeResult = String.fromCodePoint(parseInt(hexCode, 16));
+                charsConsumed = closeIndex - i + 1;
+              } else {
+                escapeResult = 'u{' + hexCode + '}';
+                charsConsumed = closeIndex - i + 1;
+              }
+            } else {
+              escapeResult = 'u{';
+              charsConsumed = 2;
+            }
+          } else if (i + 4 < str.length) {
+            // \uhhhh format
+            const hexCode = str.substring(i + 1, i + 5);
+            if (/^[0-9a-fA-F]{4}$/.test(hexCode)) {
+              escapeResult = String.fromCharCode(parseInt(hexCode, 16));
+              charsConsumed = 5; // \u + 4 hex digits
+            } else {
+              escapeResult = 'u'; // Invalid, treat as literal
+            }
+          } else {
+            escapeResult = 'u';
+          }
+        } else {
+          escapeResult = handleEscape(escaped);
+        }
+
+        i += charsConsumed;
         const quantResult = handleQuantifier(str, i, () => escapeResult, targetLen, result.length);
         if (quantResult) {
           result += quantResult.value;
@@ -367,12 +413,18 @@ function randomStringFromRegex(pattern, options = {}) {
       return { value, nextIndex: startIndex + (isLazy ? 2 : 1) };
     }
 
-    // Handle ? (0 or 1)
+    // Handle ? (0 or 1) and ?? (lazy 0 or 1)
     if (char === '?') {
-      // If we need more length, include it; otherwise 50/50
-      const include = remainingLen !== null && remainingLen > 0 ? true : Math.random() > 0.5;
+      const isLazy = startIndex + 1 < str.length && str[startIndex + 1] === '?';
+      // Lazy: prefer 0, non-lazy: 50/50 or based on remaining length
+      let include;
+      if (isLazy) {
+        include = Math.random() < 0.3; // Lazy prefers not including
+      } else {
+        include = remainingLen !== null && remainingLen > 0 ? true : Math.random() > 0.5;
+      }
       const value = include ? generator() : '';
-      return { value, nextIndex: startIndex + 1 };
+      return { value, nextIndex: startIndex + (isLazy ? 2 : 1) };
     }
 
     return null;
@@ -389,6 +441,9 @@ function randomStringFromRegex(pattern, options = {}) {
       case 't': return '\t';
       case 'n': return '\n';
       case 'r': return '\r';
+      case '0': return '\0'; // Null character
+      case 'b': return ''; // Word boundary - doesn't generate a character
+      case 'B': return ''; // Non-word boundary - doesn't generate a character
       default: return char; // Literal escaped character
     }
   }
