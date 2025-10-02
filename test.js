@@ -381,6 +381,52 @@ function runTests() {
     (r) => ({ valid: r === 'cba', error: 'Should be "cba" (reversed "abc")' })
   );
 
+  // ==================== REGEX FLAGS/MODIFIERS ====================
+  console.log('\n\n🔹 REGEX FLAGS (MODIFIERS)');
+  console.log('-'.repeat(70));
+
+  test(
+    'Case-insensitive flag /i - lowercase pattern',
+    /[a-z]{5}/i,
+    {},
+    (r) => ({ valid: /^[a-zA-Z]{5}$/.test(r), error: 'Should match both upper and lowercase letters' })
+  );
+
+  test(
+    'Case-insensitive flag /i - uppercase pattern',
+    /[A-Z]{5}/i,
+    {},
+    (r) => ({ valid: /^[a-zA-Z]{5}$/.test(r), error: 'Should match both upper and lowercase letters' })
+  );
+
+  test(
+    'Case-insensitive flag /i - mixed pattern',
+    /[a-zA-Z]{10}/i,
+    {},
+    (r) => ({ valid: /^[a-zA-Z]{10}$/.test(r) && r.length === 10, error: 'Should be 10 letters (any case)' })
+  );
+
+  test(
+    'DotAll flag /s - dot matches newlines',
+    /.{5}/s,
+    {},
+    (r) => ({ valid: r.length === 5, error: 'Should be 5 characters (possibly including newlines)' })
+  );
+
+  test(
+    'Case-insensitive with character class',
+    /[abc]{3}/i,
+    {},
+    (r) => ({ valid: /^[abcABC]{3}$/.test(r), error: 'Should match a,b,c in any case' })
+  );
+
+  test(
+    'Case-insensitive with exact letters',
+    /hello/i,
+    {},
+    (r) => ({ valid: /^hello$/i.test(r) && r.length === 5, error: 'Should match "hello" in any case' })
+  );
+
   // ==================== EDGE CASES ====================
   console.log('\n\n🔹 EDGE CASES');
   console.log('-'.repeat(70));

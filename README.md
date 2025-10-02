@@ -51,6 +51,10 @@ console.log(phone); // => "(555) 123-4567"
 // Generate with length constraints
 const serialNumber = randomStringFromRegex('^SN[0-9A-Za-z]*$', { min: 20, max: 30 });
 console.log(serialNumber); // => "SN7aB3cD9eF1gH2iJ4kL5m"
+
+// Use regex flags (case-insensitive)
+const caseInsensitive = randomStringFromRegex(/hello/i);
+console.log(caseInsensitive); // => "HeLLo" or "hello" or "HELLO"
 ```
 
 ### Browser
@@ -259,6 +263,37 @@ randomStringFromRegex('\\d{10}', {
 // => "(123) 456-7890"
 ```
 
+### Regex Flags (Modifiers)
+
+Regex flags/modifiers control pattern matching behavior:
+
+```javascript
+// Case-insensitive flag (/i)
+randomStringFromRegex(/[a-z]{5}/i);
+// => Can generate: "aBcDe", "HELLO", "WoRLd"
+
+randomStringFromRegex(/hello/i);
+// => Can generate: "hello", "HELLO", "HeLLo", "hELLO"
+
+// DotAll flag (/s) - makes . match newlines
+randomStringFromRegex(/.{3}/s);
+// => Can include newlines: "a\nb", "xyz"
+
+// Combining flags
+randomStringFromRegex(/[a-z]{5}/is);
+// => Case-insensitive + dotAll
+
+// Using with character classes
+randomStringFromRegex(/[abc]{4}/i);
+// => Can generate: "AaBb", "CCCC", "aBcA"
+```
+
+**Supported Flags:**
+- **`i`** (ignoreCase) - Makes patterns case-insensitive. Affects character classes `[a-z]` and literal characters.
+- **`s`** (dotAll) - Makes `.` match newline characters in addition to regular characters.
+
+**Note:** Other JavaScript regex flags (`g`, `m`, `u`, `y`) don't affect string generation and are ignored.
+
 ## Supported Regex Features
 
 ### Character Classes
@@ -299,14 +334,15 @@ randomStringFromRegex('\\d{10}', {
 
 ## Testing
 
-The library includes a comprehensive test suite with 41 tests covering:
+The library includes a comprehensive test suite with 47 tests covering:
 - Basic patterns
 - Quantifiers
 - Escape sequences
-- Groups and alternation
+- Groups and alternation (including top-level alternation)
 - Real-world patterns
 - Length constraints
 - Transform function
+- Regex flags/modifiers (i, s)
 - Edge cases
 
 Run tests:
@@ -355,10 +391,14 @@ MIT © [Your Name]
 
 ## Changelog
 
-### v1.2.0 (2025-01-XX)
+### v2.0.0 (2025-01-XX)
+- **NEW**: Regex flags/modifiers support
+  - Added support for `/i` (case-insensitive) flag
+  - Added support for `/s` (dotAll) flag for `.` matching newlines
+  - Works with RegExp objects: `/[a-z]{5}/i`
 - **Fixed**: Top-level alternation support (`pattern1|pattern2`)
 - Now correctly handles `^EG[0-9A-Za-z]*$|[0-9]*` and similar patterns
-- Added 3 new tests for top-level alternation (41 tests total)
+- Added 9 new tests (47 tests total, 100% passing)
 
 ### v1.1.0 (2025-01-XX)
 - Added `transform` option for custom string transformations

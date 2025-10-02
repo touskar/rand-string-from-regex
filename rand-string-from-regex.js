@@ -19,8 +19,19 @@ function randomStringFromRegex(pattern, options = {}) {
     transform: options.transform || null
   };
 
-  // Convert RegExp to string
-  let patternStr = (typeof pattern === 'string' ? pattern : pattern.source);
+  // Extract pattern and flags
+  let patternStr;
+  let flags = {};
+
+  if (typeof pattern === 'string') {
+    patternStr = pattern;
+  } else {
+    // RegExp object - extract pattern and flags
+    patternStr = pattern.source;
+    flags.ignoreCase = pattern.ignoreCase || pattern.flags.includes('i');
+    flags.dotAll = pattern.dotAll || pattern.flags.includes('s');
+    flags.multiline = pattern.multiline || pattern.flags.includes('m');
+  }
 
   // Handle top-level alternation before removing anchors
   if (patternStr.includes('|')) {
@@ -51,7 +62,7 @@ function randomStringFromRegex(pattern, options = {}) {
       targetLength = Math.max(1, Math.floor(Math.random() * (opts.max + 1)));
     }
 
-    const result = generate(patternStr, targetLength);
+    const result = generate(patternStr, targetLength, flags);
 
     // Check length constraints
     const meetsMin = opts.min === null || result.length >= opts.min;
@@ -76,7 +87,7 @@ function randomStringFromRegex(pattern, options = {}) {
   }
   return opts.transform ? opts.transform(bestResult) : bestResult;
 
-  function generate(str, targetLen = null, index = 0) {
+  function generate(str, targetLen = null, regexFlags = {}, index = 0) {
     let result = '';
     let i = index;
 
@@ -109,7 +120,7 @@ function randomStringFromRegex(pattern, options = {}) {
         if (groupContent.startsWith('?:')) {
           const innerContent = groupContent.substring(2);
           const remainingLen = targetLen !== null ? Math.max(0, targetLen - result.length) : null;
-          const groupResult = handleAlternation(innerContent, remainingLen);
+          const groupResult = handleAlternation(innerContent, remainingLen, regexFlags);
           i = groupEnd + 1;
 
           const quantResult = handleQuantifier(str, i, () => groupResult, targetLen, result.length);
@@ -126,7 +137,7 @@ function randomStringFromRegex(pattern, options = {}) {
         } else {
           // Regular capturing group or alternation
           const remainingLen = targetLen !== null ? Math.max(0, targetLen - result.length) : null;
-          const groupResult = handleAlternation(groupContent, remainingLen);
+          const groupResult = handleAlternation(groupContent, remainingLen, regexFlags);
           i = groupEnd + 1;
 
           const quantResult = handleQuantifier(str, i, () => groupResult, targetLen, result.length);
@@ -146,12 +157,12 @@ function randomStringFromRegex(pattern, options = {}) {
         const classContent = str.substring(i + 1, closeIndex);
 
         i = closeIndex + 1;
-        const quantResult = handleQuantifier(str, i, () => generateFromClass(classContent), targetLen, result.length);
+        const quantResult = handleQuantifier(str, i, () => generateFromClass(classContent, regexFlags), targetLen, result.length);
         if (quantResult) {
           result += quantResult.value;
           i = quantResult.nextIndex;
         } else {
-          result += generateFromClass(classContent);
+          result += generateFromClass(classContent, regexFlags);
         }
         continue;
       }
@@ -159,18 +170,24 @@ function randomStringFromRegex(pattern, options = {}) {
       // Handle dot (any character)
       if (char === '.') {
         i++;
-        const quantResult = handleQuantifier(str, i, () => randomChar(), targetLen, result.length);
+        const quantResult = handleQuantifier(str, i, () => randomChar(regexFlags), targetLen, result.length);
         if (quantResult) {
           result += quantResult.value;
           i = quantResult.nextIndex;
         } else {
-          result += randomChar();
+          result += randomChar(regexFlags);
         }
         continue;
       }
 
       // Check for quantifiers after regular character
-      const quantResult = handleQuantifier(str, i + 1, () => char, targetLen, result.length);
+      let finalChar = char;
+      // Apply ignoreCase flag to literal characters
+      if (regexFlags.ignoreCase && /[a-zA-Z]/.test(char)) {
+        finalChar = Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase();
+      }
+
+      const quantResult = handleQuantifier(str, i + 1, () => finalChar, targetLen, result.length);
       if (quantResult) {
         result += quantResult.value;
         i = quantResult.nextIndex;
@@ -178,20 +195,20 @@ function randomStringFromRegex(pattern, options = {}) {
       }
 
       // Regular character
-      result += char;
+      result += finalChar;
       i++;
     }
 
     return result;
   }
 
-  function handleAlternation(content, targetLen = null) {
+  function handleAlternation(content, targetLen = null, regexFlags = {}) {
     if (content.includes('|')) {
       const options = splitAlternation(content);
       const chosen = options[Math.floor(Math.random() * options.length)];
-      return generate(chosen, targetLen);
+      return generate(chosen, targetLen, regexFlags);
     }
-    return generate(content, targetLen);
+    return generate(content, targetLen, regexFlags);
   }
 
   function splitTopLevelAlternation(str) {
@@ -376,7 +393,7 @@ function randomStringFromRegex(pattern, options = {}) {
     }
   }
 
-  function generateFromClass(classContent) {
+  function generateFromClass(classContent, regexFlags = {}) {
     const isNegated = classContent[0] === '^';
     const content = isNegated ? classContent.slice(1) : classContent;
 
@@ -405,9 +422,30 @@ function randomStringFromRegex(pattern, options = {}) {
         for (let code = start; code <= end; code++) {
           chars += String.fromCharCode(code);
         }
+        // For ignoreCase flag, add opposite case for letter ranges
+        if (regexFlags.ignoreCase) {
+          const startChar = content[i];
+          const endChar = content[i + 2];
+          if (/[a-z]/.test(startChar) && /[a-z]/.test(endChar)) {
+            // Add uppercase equivalent
+            for (let code = start; code <= end; code++) {
+              chars += String.fromCharCode(code - 32); // Convert to uppercase
+            }
+          } else if (/[A-Z]/.test(startChar) && /[A-Z]/.test(endChar)) {
+            // Add lowercase equivalent
+            for (let code = start; code <= end; code++) {
+              chars += String.fromCharCode(code + 32); // Convert to lowercase
+            }
+          }
+        }
         i += 3;
       } else {
         chars += content[i];
+        // For ignoreCase flag, add opposite case for individual letters
+        if (regexFlags.ignoreCase && /[a-zA-Z]/.test(content[i])) {
+          const char = content[i];
+          chars += char === char.toUpperCase() ? char.toLowerCase() : char.toUpperCase();
+        }
         i++;
       }
     }
@@ -438,7 +476,11 @@ function randomStringFromRegex(pattern, options = {}) {
     return str.length;
   }
 
-  function randomChar() {
+  function randomChar(regexFlags = {}) {
+    // If dotAll flag is set, . can match newlines
+    if (regexFlags.dotAll && Math.random() < 0.1) {
+      return '\n';
+    }
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     return chars[Math.floor(Math.random() * chars.length)];
   }
