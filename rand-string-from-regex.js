@@ -19,10 +19,18 @@ function randomStringFromRegex(pattern, options = {}) {
     transform: options.transform || null
   };
 
-  // Convert RegExp to string and remove anchors
-  const patternStr = (typeof pattern === 'string' ? pattern : pattern.source)
-    .replace(/^\^/, '')
-    .replace(/\$$/, '');
+  // Convert RegExp to string
+  let patternStr = (typeof pattern === 'string' ? pattern : pattern.source);
+
+  // Handle top-level alternation before removing anchors
+  if (patternStr.includes('|')) {
+    const options = splitTopLevelAlternation(patternStr);
+    const chosen = options[Math.floor(Math.random() * options.length)];
+    patternStr = chosen;
+  }
+
+  // Now remove anchors from the chosen alternative
+  patternStr = patternStr.replace(/^\^/, '').replace(/\$$/, '');
 
   // Try to generate a string within the length constraints
   let attempts = 0;
@@ -184,6 +192,42 @@ function randomStringFromRegex(pattern, options = {}) {
       return generate(chosen, targetLen);
     }
     return generate(content, targetLen);
+  }
+
+  function splitTopLevelAlternation(str) {
+    const options = [];
+    let current = '';
+    let depth = 0;
+    let inCharClass = false;
+
+    for (let i = 0; i < str.length; i++) {
+      const char = str[i];
+
+      if (char === '\\' && i + 1 < str.length) {
+        current += char + str[i + 1];
+        i++;
+      } else if (char === '[' && !inCharClass) {
+        inCharClass = true;
+        current += char;
+      } else if (char === ']' && inCharClass) {
+        inCharClass = false;
+        current += char;
+      } else if (char === '(' && !inCharClass) {
+        depth++;
+        current += char;
+      } else if (char === ')' && !inCharClass) {
+        depth--;
+        current += char;
+      } else if (char === '|' && depth === 0 && !inCharClass) {
+        options.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    if (current) options.push(current);
+    return options;
   }
 
   function splitAlternation(str) {
