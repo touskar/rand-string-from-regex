@@ -213,6 +213,33 @@ function runTests() {
     (r) => ({ valid: /^[a-z]{3}\.(com|net|org)$/.test(r), error: 'Should match domain pattern' })
   );
 
+  test(
+    'Top-level alternation',
+    'cat|dog|bird',
+    {},
+    (r) => ({ valid: r === 'cat' || r === 'dog' || r === 'bird', error: 'Should be "cat", "dog", or "bird"' })
+  );
+
+  test(
+    'Top-level alternation with anchors',
+    '^EG[0-9A-Za-z]*$|[0-9]*',
+    {},
+    (r) => ({
+      valid: /^EG[0-9A-Za-z]*$/.test(r) || /^[0-9]*$/.test(r),
+      error: 'Should match either "EG..." or just digits'
+    })
+  );
+
+  test(
+    'Top-level alternation with groups',
+    '^(hello|hi)$|^(bye|goodbye)$',
+    {},
+    (r) => ({
+      valid: r === 'hello' || r === 'hi' || r === 'bye' || r === 'goodbye',
+      error: 'Should be a greeting or farewell'
+    })
+  );
+
   // ==================== REAL-WORLD PATTERNS ====================
   console.log('\n\n🔹 REAL-WORLD PATTERNS');
   console.log('-'.repeat(70));

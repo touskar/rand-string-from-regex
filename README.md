@@ -149,11 +149,22 @@ randomStringFromRegex('\\D{3}'); // => "xYz"
 // Simple group
 randomStringFromRegex('(abc){2}'); // => "abcabc"
 
-// Alternation
+// Alternation in groups
 randomStringFromRegex('(cat|dog)'); // => "cat" or "dog"
+
+// Top-level alternation (OR operator)
+randomStringFromRegex('cat|dog|bird'); // => "cat" or "dog" or "bird"
+
+// Top-level alternation with different patterns
+randomStringFromRegex('^EG[0-9A-Za-z]*$|[0-9]*');
+// => Either "EG123abc" or "456789"
 
 // Complex alternation
 randomStringFromRegex('[a-z]{3}\\.(com|net|org)'); // => "xyz.com"
+
+// Multiple patterns with anchors
+randomStringFromRegex('^(hello|hi)$|^(bye|goodbye)$');
+// => "hello", "hi", "bye", or "goodbye"
 ```
 
 ### Real-World Patterns
@@ -280,6 +291,7 @@ randomStringFromRegex('\\d{10}', {
 - `(?:abc)` - Non-capturing group
 - `a|b` - Alternation (a or b)
 - `(cat|dog)` - Group alternation
+- `^pattern1$|^pattern2$` - Top-level alternation (matches entire pattern1 OR pattern2)
 
 ### Anchors
 - `^` - Start of string (stripped during generation)
@@ -287,7 +299,7 @@ randomStringFromRegex('\\d{10}', {
 
 ## Testing
 
-The library includes a comprehensive test suite with 38 tests covering:
+The library includes a comprehensive test suite with 41 tests covering:
 - Basic patterns
 - Quantifiers
 - Escape sequences
@@ -342,6 +354,11 @@ MIT © [Your Name]
 - [Issues](https://github.com/touskar/rand-string-from-regex/issues)
 
 ## Changelog
+
+### v1.2.0 (2025-01-XX)
+- **Fixed**: Top-level alternation support (`pattern1|pattern2`)
+- Now correctly handles `^EG[0-9A-Za-z]*$|[0-9]*` and similar patterns
+- Added 3 new tests for top-level alternation (41 tests total)
 
 ### v1.1.0 (2025-01-XX)
 - Added `transform` option for custom string transformations
