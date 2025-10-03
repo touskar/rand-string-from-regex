@@ -20,7 +20,7 @@ Generate random strings that match a regular expression pattern. Works in both N
 
 Try the library in your browser with 32+ interactive examples:
 
-- **[Open Live Demo](https://htmlpreview.github.io/?https://github.com/touskar/rand-string-from-regex/blob/main/demo.html)** - Hosted via htmlpreview.github.io
+- **[Open Live Demo](https://htmlpreview.github.io/?https://github.com/touskar/rand-string-from-regex/blob/release/demo.html)** - Hosted via htmlpreview.github.io
 - **Local Demo** - Open `demo.html` in your browser after cloning the repo
 
 The demo includes:
