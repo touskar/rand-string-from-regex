@@ -492,10 +492,9 @@ Expected output: **226/226 tests passing (100%)** ✅
 
 This project uses [Husky](https://typicode.github.io/husky/) to ensure code quality:
 
-- **pre-commit hook**: Runs all 226 tests before allowing commits
 - **pre-push hook**: Runs all 226 tests before allowing pushes
 
-If any test fails, the commit/push is blocked. This ensures the codebase remains stable.
+If any test fails, the push is blocked. This ensures only tested code reaches the repository.
 
 ### Running Tests
 
@@ -576,7 +575,7 @@ MIT © [Your Name]
 - **NEW**: Intelligent length distribution across variable parts
 - **NEW**: Pre-validation of impossible constraints
 - **NEW**: Fixed-length patterns take absolute priority over options (e.g., `\d{4}` with `{min:10}` throws error)
-- **NEW**: Husky git hooks integration - auto-run tests on commit/push
+- **NEW**: Husky git hooks integration - auto-run tests on push
 - **FIXED**: True lazy/greedy behavior (deterministic, not probability-based)
 - **FIXED**: Hex/unicode escapes no longer conflict with escape sequences
 - **FIXED**: Top-level alternation with anchors works correctly
