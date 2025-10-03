@@ -413,12 +413,13 @@ The library uses a retry mechanism to meet length constraints. If constraints ca
 
 ## Limitations
 
-- Does not support advanced regex features like:
-  - Backreferences (`\1`, `\2`)
-  - Lookaheads/lookbehinds (they are skipped)
-  - Unicode property escapes (`\p{Letter}`)
-  - Named capture groups
-- Very complex patterns may require increasing `maxRetries`
+The following advanced regex features are not supported:
+
+- **Backreferences** (`\1`, `\2`, `\k<name>`)
+- **Lookaheads/Lookbehinds** (`(?=...)`, `(?!...)`, `(?<=...)`, `(?<!...)`) - These are skipped (don't generate characters)
+- **Unicode property escapes** (`\p{Letter}`, `\p{Number}`)
+- **Named capture groups** (`(?<name>...)`)
+- Very complex patterns may require increasing `maxRetries` option (default: 100)
 
 ## Contributing
 
@@ -449,7 +450,10 @@ MIT © [Your Name]
   - Added unicode: `\uhhhh` and `\u{hhhhh}` (emoji support!)
   - Added `\0` (null character)
   - Added `\b` and `\B` (word boundaries)
-- **NEW**: Comprehensive test suite (54 tests, 100% passing)
+- **FIXED**: Unicode ranges in character classes (`[\u0041-\u005A]` now works!)
+- **FIXED**: Negated multi-range character classes (`[^a-zA-Z0-9]` now works!)
+- **FIXED**: Escaped special chars in character classes (`[\[\]\(\)]` now works!)
+- **NEW**: Comprehensive test suite (227 tests, **100% passing**)
 - Supports all major JavaScript regex operators
 - Complete documentation with examples for every feature
 

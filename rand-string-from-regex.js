@@ -199,7 +199,25 @@ function randomStringFromRegex(pattern, options = {}) {
 
       // Handle character classes [...]
       if (char === '[') {
-        const closeIndex = str.indexOf(']', i);
+        // Find the closing ] while respecting escaped characters
+        let closeIndex = i + 1;
+        let foundClose = false;
+        while (closeIndex < str.length) {
+          if (str[closeIndex] === '\\' && closeIndex + 1 < str.length) {
+            closeIndex += 2; // Skip escaped character
+            continue;
+          }
+          if (str[closeIndex] === ']') {
+            foundClose = true;
+            break;
+          }
+          closeIndex++;
+        }
+
+        if (!foundClose) {
+          closeIndex = str.indexOf(']', i);
+        }
+
         const classContent = str.substring(i + 1, closeIndex);
 
         i = closeIndex + 1;
@@ -450,7 +468,21 @@ function randomStringFromRegex(pattern, options = {}) {
 
   function generateFromClass(classContent, regexFlags = {}) {
     const isNegated = classContent[0] === '^';
-    const content = isNegated ? classContent.slice(1) : classContent;
+    let content = isNegated ? classContent.slice(1) : classContent;
+
+    // FIX 1: Expand unicode escapes in character class BEFORE processing
+    // Replace \uhhhh with actual character
+    content = content.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => {
+      return String.fromCharCode(parseInt(hex, 16));
+    });
+    // Replace \u{hhhhh} with actual character
+    content = content.replace(/\\u\{([0-9a-fA-F]+)\}/g, (match, hex) => {
+      return String.fromCodePoint(parseInt(hex, 16));
+    });
+    // Replace \xhh with actual character
+    content = content.replace(/\\x([0-9a-fA-F]{2})/g, (match, hex) => {
+      return String.fromCharCode(parseInt(hex, 16));
+    });
 
     let chars = '';
     let i = 0;
@@ -458,14 +490,33 @@ function randomStringFromRegex(pattern, options = {}) {
     while (i < content.length) {
       if (content[i] === '\\' && i + 1 < content.length) {
         i++;
-        const escaped = handleEscape(content[i]);
+        const nextChar = content[i];
+
+        // FIX 3: Handle escaped special characters in character class
+        // These should be treated as literal characters
+        if ('[]()|{}^$.*+?'.includes(nextChar)) {
+          chars += nextChar;
+          i++;
+          continue;
+        }
+
+        const escaped = handleEscape(nextChar);
         // For character classes, expand escape sequences
-        if (content[i] === 'd') {
+        if (nextChar === 'd') {
           chars += '0123456789';
-        } else if (content[i] === 'w') {
+        } else if (nextChar === 'w') {
           chars += 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
-        } else if (content[i] === 's') {
+        } else if (nextChar === 's') {
           chars += ' \t\n\r';
+        } else if (nextChar === 'D') {
+          // Non-digit - add common non-digit chars
+          chars += 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()';
+        } else if (nextChar === 'W') {
+          // Non-word - add common non-word chars
+          chars += '!@#$%^&*()-+=[]{}|;:,.<>?/';
+        } else if (nextChar === 'S') {
+          // Non-whitespace - add common non-whitespace chars
+          chars += 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         } else {
           chars += escaped;
         }
@@ -506,8 +557,8 @@ function randomStringFromRegex(pattern, options = {}) {
     }
 
     if (isNegated) {
-      // For negated classes, use alphanumeric as default
-      const allChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      // FIX 2: Improved negation - use a comprehensive character set
+      const allChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?/~`\'" \t\n\r';
       const filteredChars = allChars.split('').filter(c => !chars.includes(c)).join('');
       return filteredChars.length > 0 ? filteredChars[Math.floor(Math.random() * filteredChars.length)] : '';
     }
