@@ -711,7 +711,7 @@ Works in all modern browsers and IE11+. Uses only standard JavaScript features.
 v4.0.0 introduces intelligent pre-validation that detects impossible constraints **before** generation:
 
 ```javascript
-// Impossible constraint detected immediately
+//  Impossible constraint detected immediately
 randomStringFromRegex('\\d{3}', {min: 10});
 // Throws: "Regex generates exactly 3 characters (fixed length),
 //         but min constraint is 10. Regex length takes priority."
