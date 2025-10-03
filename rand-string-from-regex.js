@@ -474,7 +474,10 @@ function generateSequence(children, targetLength, flags, capturedGroups, groupIn
     .reduce((sum, p) => sum + p.lengthInfo.min, 0);
 
   const variableParts = parts.filter(p => !p.lengthInfo.fixed);
-  const variableBudget = Math.max(0, targetLength - fixedLength);
+
+  // Budget is the space available AFTER accounting for minimums
+  const variableMinimum = variableParts.reduce((sum, p) => sum + p.lengthInfo.min, 0);
+  const variableBudget = Math.max(0, targetLength - fixedLength - variableMinimum);
 
   // Distribute budget across variable parts
   const allocations = distributeLength(variableParts, variableBudget);
@@ -593,11 +596,17 @@ function generateQuantified(ast, targetLength, flags, capturedGroups, groupIndex
 }
 
 function generateGroup(ast, targetLength, flags, capturedGroups, groupIndex) {
+  // Assign group number BEFORE generating content (groups numbered by opening paren)
+  let currentIndex = null;
+  if (ast.capturing) {
+    currentIndex = ++groupIndex.value;
+  }
+
+  // Generate the group content
   const result = generateFromAST(ast.ast, targetLength, flags, capturedGroups, groupIndex);
 
-  // Capture if capturing group
+  // Capture the result if this is a capturing group
   if (ast.capturing) {
-    const currentIndex = ++groupIndex.value;
     capturedGroups[currentIndex] = result;
     if (ast.name) {
       capturedGroups[ast.name] = result;

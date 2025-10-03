@@ -13,7 +13,7 @@ Generate random strings that match a regular expression pattern. Works in both N
 - **Smart validation** - Pre-validates impossible constraints before generation
 - **Priority system** - Fixed-length patterns take priority over options
 - **Full regex support** - Character classes, quantifiers, groups, alternation, backreferences, escapes
-- **Test coverage** - 226 comprehensive tests, 100% passing
+- **Test coverage** - 292 comprehensive tests, 100% passing
 - **Git hooks** - Husky integration ensures tests pass on commit/push
 
 ## Installation
@@ -467,7 +467,7 @@ randomStringFromRegex('hello', { min: 10 });
 
 ## Testing
 
-The library includes a comprehensive test suite with **226 tests** covering:
+The library includes a comprehensive test suite with **292 tests** covering:
 - Basic patterns and literals
 - All quantifier types (greedy and lazy)
 - Character classes and escape sequences
@@ -484,7 +484,7 @@ Run tests:
 npm test
 ```
 
-Expected output: **226/226 tests passing (100%)** ✅
+Expected output: **292/292 tests passing (100%)** ✅
 
 ## Development
 
@@ -492,7 +492,7 @@ Expected output: **226/226 tests passing (100%)** ✅
 
 This project uses [Husky](https://typicode.github.io/husky/) to ensure code quality:
 
-- **pre-push hook**: Runs all 226 tests before allowing pushes
+- **pre-push hook**: Runs all 292 tests before allowing pushes
 
 If any test fails, the push is blocked. This ensures only tested code reaches the repository.
 
@@ -571,17 +571,21 @@ MIT © [Your Name]
 
 ### v4.0.0 (2025-10-03) - Major Architectural Redesign 🎉
 - **NEW**: Complete AST-based architecture for accurate generation
-- **NEW**: Backreference support (`\1`, `\2`, etc.)
+- **NEW**: Backreference support (`\1`, `\2`, etc.) with correct group numbering
 - **NEW**: Intelligent length distribution across variable parts
 - **NEW**: Pre-validation of impossible constraints
 - **NEW**: Fixed-length patterns take absolute priority over options (e.g., `\d{4}` with `{min:10}` throws error)
 - **NEW**: Husky git hooks integration - auto-run tests on push
+- **NEW**: 42 additional complex test cases for v4 features
+- **NEW**: 24 real-world pattern tests (emails, phones, IBANs, credit cards, dates, etc.)
 - **FIXED**: True lazy/greedy behavior (deterministic, not probability-based)
 - **FIXED**: Hex/unicode escapes no longer conflict with escape sequences
 - **FIXED**: Top-level alternation with anchors works correctly
 - **FIXED**: Zero-length generation (`{max: 0}`) now respected
 - **FIXED**: Infinite loop prevention for nested quantifiers with zero-length elements
-- **IMPROVED**: 226/226 tests passing (100%) - all edge cases resolved
+- **FIXED**: Length distribution bug causing off-by-one errors with exact min=max constraints
+- **FIXED**: Backreference group numbering for nested capturing groups
+- **IMPROVED**: 292/292 tests passing (100%) - all edge cases resolved
 - **IMPROVED**: Better error messages for impossible constraints
 - **PERFORMANCE**: 20000x faster for impossible constraint detection
 - 100% backward compatible with v3.0.0
@@ -596,7 +600,7 @@ MIT © [Your Name]
 - **FIXED**: Unicode ranges in character classes (`[\u0041-\u005A]` now works!)
 - **FIXED**: Negated multi-range character classes (`[^a-zA-Z0-9]` now works!)
 - **FIXED**: Escaped special chars in character classes (`[\[\]\(\)]` now works!)
-- **NEW**: Comprehensive test suite (226 tests, **100% passing**)
+- **NEW**: Comprehensive test suite (292 tests total, **100% passing**)
 - Supports all major JavaScript regex operators
 - Complete documentation with examples for every feature
 

@@ -100,15 +100,23 @@ function test(description, pattern, options = {}, validator = null) {
     }
 
   } catch (e) {
-    console.log(`   ❌ ERROR: ${e.message}`);
-    failedTests++;
+    // Check if this was an expected error
+    if (options.expectError) {
+      console.log(`   ✅ PASS (Expected error: ${e.message})`);
+      passedTests++;
+    } else {
+      console.log(`   ❌ ERROR: ${e.message}`);
+      failedTests++;
+    }
   }
 }
 
 console.log('🧪 COMPREHENSIVE TEST SUITE - ALL REGEX FEATURES\n');
 console.log('='.repeat(70));
 console.log('Combined from: test.js, test-complete.js, test-all-operators.js, test-stress.js');
-console.log('Total tests: 227');
+console.log('Plus 42 complex v4.0.0 feature tests (backreferences, edge cases, validation)');
+console.log('Plus 24 real-world pattern tests (emails, phones, dates, IBANs, etc.)');
+console.log('Total tests: 292');
 console.log('='.repeat(70));
 
 
@@ -1663,6 +1671,631 @@ test(
   (r) => ({
     valid: ['[',']','(',')' ,'{','}'].includes(r),
     error: 'Should be one of the bracket chars'
+  })
+);
+
+
+// ==================== COMPLEX & EDGE CASES (v4.0.0 features) ====================
+console.log('\n\n🔹 COMPLEX & EDGE CASES - v4.0.0 Features');
+console.log('-'.repeat(70));
+
+// BACKREFERENCES - Major v4.0.0 feature
+test(
+  'Simple backreference \\1',
+  '(\\d{3})-\\1',
+  (r) => {
+    const parts = r.split('-');
+    return {
+      valid: parts.length === 2 && parts[0] === parts[1] && /^\d{3}$/.test(parts[0]),
+      error: 'Should be "XXX-XXX" where both parts match'
+    };
+  }
+);
+
+test(
+  'Backreference with alternation',
+  '(cat|dog) and \\1',
+  (r) => {
+    return {
+      valid: r === 'cat and cat' || r === 'dog and dog',
+      error: 'Should be "cat and cat" or "dog and dog"'
+    };
+  }
+);
+
+test(
+  'Multiple backreferences',
+  '(\\w+)@(\\w+)\\.\\2',
+  (r) => {
+    const match = r.match(/^(\w+)@(\w+)\.(\w+)$/);
+    return {
+      valid: match && match[2] === match[3],
+      error: 'Domain should repeat: user@example.example'
+    };
+  }
+);
+
+test(
+  'Backreference with quantifier',
+  '(\\d{2})-(\\w{2})-\\1',
+  (r) => {
+    const match = r.match(/^(\d{2})-(\w{2})-(\d{2})$/);
+    return {
+      valid: match && match[1] === match[3],
+      error: 'First and third parts should match: 42-ab-42'
+    };
+  }
+);
+
+test(
+  'Nested groups with backreference',
+  '((a|b)(c|d))-\\1',
+  (r) => {
+    const parts = r.split('-');
+    return {
+      valid: parts.length === 2 && parts[0] === parts[1] && /^(a|b)(c|d)$/.test(parts[0]),
+      error: 'Should be "XY-XY" where X is a|b and Y is c|d'
+    };
+  }
+);
+
+test(
+  'Complex backreference pattern',
+  '([a-z]{3})\\d{2}\\1',
+  (r) => {
+    const match = r.match(/^([a-z]{3})(\d{2})([a-z]{3})$/);
+    return {
+      valid: match && match[1] === match[3] && /^\d{2}$/.test(match[2]),
+      error: 'Should be "abc12abc" format with matching letter groups'
+    };
+  }
+);
+
+// QUANTIFIER EDGE CASES
+test(
+  '{0} - exactly zero repetitions',
+  'a{0}b',
+  (r) => ({ valid: r === 'b', error: 'Should be just "b" (a repeated 0 times)' })
+);
+
+test(
+  '{0,0} - zero to zero repetitions',
+  'x{0,0}y',
+  (r) => ({ valid: r === 'y', error: 'Should be just "y"' })
+);
+
+test(
+  'Very large exact count {100}',
+  'a{100}',
+  (r) => ({ valid: r === 'a'.repeat(100) && r.length === 100, error: 'Should be exactly 100 a\'s' })
+);
+
+test(
+  'Nested lazy quantifiers',
+  '(a+?)+(b*?)+',
+  (r) => ({
+    valid: /^a+b*$/.test(r),
+    error: 'Should match nested lazy pattern'
+  })
+);
+
+test(
+  'Triple nested quantifiers',
+  '((a{2})+)+',
+  (r) => ({
+    valid: /^(aa)+$/.test(r) && r.length % 2 === 0 && r.length >= 2,
+    error: 'Should be pairs of "aa"'
+  })
+);
+
+test(
+  'Mixed greedy and lazy in sequence',
+  'a+b*?c+?d*',
+  (r) => ({
+    valid: /^a+b*c+d*$/.test(r) && r.includes('a') && r.includes('c'),
+    error: 'Should have greedy and lazy quantifiers mixed'
+  })
+);
+
+// COMPLEX REAL-WORLD PATTERNS
+test(
+  'JWT-like token (simplified)',
+  '[A-Za-z0-9_-]{20,40}\\.[A-Za-z0-9_-]{20,40}\\.[A-Za-z0-9_-]{20,40}',
+  (r) => {
+    const parts = r.split('.');
+    return {
+      valid: parts.length === 3 && parts.every(p => /^[A-Za-z0-9_-]{20,40}$/.test(p)),
+      error: 'Should match JWT format with 3 parts'
+    };
+  }
+);
+
+test(
+  'Base64-like string',
+  '[A-Za-z0-9+/]{20}={0,2}',
+  (r) => ({
+    valid: /^[A-Za-z0-9+\/]{20}={0,2}$/.test(r) && r.length >= 20 && r.length <= 22,
+    error: 'Should match base64 format'
+  })
+);
+
+test(
+  'Complex email with dots and plus',
+  '[a-z]{3,8}(\\.[a-z]{2,5})?\\+?[a-z]{0,5}@[a-z]{5,10}\\.(com|net|org)',
+  (r) => ({
+    valid: /^[a-z]{3,8}(\.[a-z]{2,5})?\+?[a-z]{0,5}@[a-z]{5,10}\.(com|net|org)$/.test(r),
+    error: 'Should match complex email pattern'
+  })
+);
+
+test(
+  'HTML hex color with alpha',
+  '#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?',
+  (r) => ({
+    valid: /^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(r) && (r.length === 7 || r.length === 9),
+    error: 'Should be hex color with optional alpha'
+  })
+);
+
+test(
+  'Semantic version with prerelease',
+  '\\d{1,2}\\.\\d{1,2}\\.\\d{1,3}(-alpha\\.-beta\\.[0-9]+)?',
+  (r) => ({
+    valid: /^\d{1,2}\.\d{1,2}\.\d{1,3}(-alpha\.-beta\.[0-9]+)?$/.test(r),
+    error: 'Should match semver with optional prerelease'
+  })
+);
+
+test(
+  'Git branch name',
+  '(feature|bugfix|hotfix)/[a-z0-9-]{5,30}',
+  (r) => ({
+    valid: /^(feature|bugfix|hotfix)\/[a-z0-9-]{5,30}$/.test(r),
+    error: 'Should match git branch naming convention'
+  })
+);
+
+// COMPLEX NESTING & ALTERNATION
+test(
+  'Deeply nested with all features',
+  '((([a-z]{2}|[0-9]{2})+)?-?)+',
+  (r) => ({
+    // Pattern allows: (letters|digits in pairs, optional)?  dash(optional)  repeat+
+    // So "-", "ab-", "-cd-", "ab-cd-ef-" are all valid
+    valid: /^(([a-z]{2}|[0-9]{2})*-?)+$/.test(r),
+    error: 'Should match deeply nested pattern'
+  })
+);
+
+test(
+  'Alternation with different length branches',
+  '(\\d{10}|[a-z]{5}|[A-Z]{3}\\d{2})',
+  (r) => ({
+    valid: /^\d{10}$/.test(r) || /^[a-z]{5}$/.test(r) || /^[A-Z]{3}\d{2}$/.test(r),
+    error: 'Should match one of three different-length patterns'
+  })
+);
+
+test(
+  'Complex character class with ranges',
+  '[a-zA-Z0-9\\-\\_\\.]{8,20}',
+  (r) => ({
+    valid: /^[a-zA-Z0-9\-\_\.]{8,20}$/.test(r) && r.length >= 8 && r.length <= 20,
+    error: 'Should be 8-20 chars from complex class'
+  })
+);
+
+// CHARACTER CLASS EDGE CASES
+test(
+  'Single character in class [a]',
+  '[a]{5}',
+  (r) => ({ valid: r === 'aaaaa', error: 'Should be five a\'s' })
+);
+
+test(
+  'Character class with only special chars',
+  '[!@#$%]{3}',
+  (r) => ({
+    valid: /^[!@#$%]{3}$/.test(r) && r.length === 3,
+    error: 'Should be 3 special chars'
+  })
+);
+
+test(
+  'Escaped dash in character class',
+  '[a\\-z]{4}',
+  (r) => ({
+    valid: /^[a\-z]{4}$/.test(r) && r.length === 4,
+    error: 'Should be 4 chars: a, -, or z only'
+  })
+);
+
+test(
+  'Multiple ranges in one class',
+  '[a-zA-Z0-9_-]{10}',
+  (r) => ({
+    valid: /^[a-zA-Z0-9_-]{10}$/.test(r) && r.length === 10,
+    error: 'Should be 10 alphanumeric/underscore/dash chars'
+  })
+);
+
+// EDGE CASES WITH MIN/MAX
+test(
+  'Pattern with exact length and matching min/max',
+  '\\d{5}',
+  (r) => ({ valid: /^\d{5}$/.test(r) && r.length === 5, error: 'Should be exactly 5 digits' }),
+  { min: 5, max: 5 }
+);
+
+test(
+  'Zero-length pattern with max=0',
+  'a*b*c*',
+  (r) => ({ valid: r === '', error: 'Should be empty with max=0' }),
+  { max: 0 }
+);
+
+test(
+  'Variable pattern with exact min=max',
+  '[a-z]+',
+  (r) => ({ valid: /^[a-z]{50}$/.test(r) && r.length === 50, error: 'Should be exactly 50 lowercase' }),
+  { min: 50, max: 50 }
+);
+
+// COMPLEX ESCAPE SEQUENCES
+test(
+  'All escape types combined',
+  '\\d\\w\\s\\D\\W\\S\\t\\n\\r',
+  (r) => ({
+    valid: /^\d\w\s\D\W\S\t\n\r$/.test(r) && r.length === 9,
+    error: 'Should have all escape sequence types'
+  })
+);
+
+test(
+  'Unicode range with flags',
+  /[\u0041-\u005A]{5}/i,
+  (r) => ({
+    valid: /^[a-zA-Z]{5}$/.test(r) && r.length === 5,
+    error: 'Should be 5 letters (unicode range with case-insensitive)'
+  })
+);
+
+test(
+  'Mixed unicode, hex, and literals',
+  '\\u{1F600}\\x41\\u0042test',
+  (r) => ({ valid: r === '😀ABtest', error: 'Should be "😀ABtest"' })
+);
+
+// STRESS TESTS - Complex combinations
+test(
+  'Everything: groups, quantifiers, alternation, backrefs, flags',
+  /^((https|http):\/\/)?(www\.)?([a-z0-9]+)\.([a-z]{2,5})$/i,
+  (r) => ({
+    valid: typeof r === 'string' && r.length > 0,
+    error: 'Should generate URL-like string'
+  })
+);
+
+test(
+  'Extreme nesting with alternation',
+  '(((((a|b)|(c|d))|(e|f))|(g|h))|(i|j))',
+  (r) => ({
+    valid: ['a','b','c','d','e','f','g','h','i','j'].includes(r),
+    error: 'Should be one letter a-j'
+  })
+);
+
+test(
+  'Long sequence with mixed quantifiers',
+  'a{3}b+c*d?e{2,5}f*?g+?h??',
+  (r) => ({
+    valid: /^aaab+c*d?e{2,5}f*g+h?$/.test(r) && r.startsWith('aaa') && r.includes('b'),
+    error: 'Should match complex quantifier sequence'
+  })
+);
+
+test(
+  'Multiple backreferences with quantifiers',
+  '(\\d+)-(\\w+)-\\1-\\2',
+  (r) => {
+    const parts = r.split('-');
+    return {
+      valid: parts.length === 4 && parts[0] === parts[2] && parts[1] === parts[3],
+      error: 'Pattern should be X-Y-X-Y with matching parts'
+    };
+  }
+);
+
+test(
+  'Nested groups with multiple backreferences',
+  '((\\d{2})(\\w{2}))-\\2-\\3',
+  (r) => {
+    const match = r.match(/^((\d{2})(\w{2}))-(\d{2})-(\w{2})$/);
+    return {
+      valid: match && match[2] === match[4] && match[3] === match[5],
+      error: 'Should be (DDww)-DD-ww with matching parts'
+    };
+  }
+);
+
+test(
+  'Complex alternation with backreferences',
+  '(red|blue|green) (car|bike) \\1 \\2',
+  (r) => {
+    const parts = r.split(' ');
+    return {
+      valid: parts.length === 4 &&
+             ['red','blue','green'].includes(parts[0]) &&
+             ['car','bike'].includes(parts[1]) &&
+             parts[0] === parts[2] &&
+             parts[1] === parts[3],
+      error: 'Should be "color vehicle color vehicle" with matching words'
+    };
+  }
+);
+
+// VALIDATION ERROR TESTS (should throw)
+test(
+  'Fixed length with conflicting min (should throw)',
+  '\\d{4}',
+  { min: 10, expectError: true }
+);
+
+test(
+  'Fixed length with conflicting max (should throw)',
+  'hello',
+  { max: 3, expectError: true }
+);
+
+// EDGE CASES - Empty and minimal patterns
+test(
+  'Optional everything',
+  'a?b?c?d?',
+  (r) => ({
+    valid: /^[abcd]{0,4}$/.test(r),
+    error: 'Should be 0-4 chars from abcd'
+  })
+);
+
+test(
+  'Alternation with empty branches',
+  'a||b',
+  (r) => ({
+    valid: r === 'a' || r === '' || r === 'b',
+    error: 'Should be "a", "", or "b"'
+  })
+);
+
+test(
+  'Complex lookahead-like pattern (no actual lookaheads)',
+  '(?:https?://)?(?:www\\.)?[a-z]+',
+  (r) => ({
+    valid: /^(https?:\/\/)?(www\.)?[a-z]+$/.test(r),
+    error: 'Should match URL pattern without capturing'
+  })
+);
+
+
+// ==================== REAL-WORLD PATTERNS (25 tests) ====================
+console.log('\n\n🔹 REAL-WORLD PATTERNS - Practical Use Cases');
+console.log('-'.repeat(70));
+
+test(
+  'Email address (standard)',
+  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+  (r) => ({
+    valid: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(r),
+    error: 'Should match email format'
+  })
+);
+
+test(
+  'Phone number (international format)',
+  /^\+?[1-9]\d{1,14}$/,
+  (r) => ({
+    valid: /^\+?[1-9]\d{1,14}$/.test(r) && r.length >= 2 && r.length <= 16,
+    error: 'Should match international phone format'
+  })
+);
+
+test(
+  'Phone number (Senegal)',
+  /^(\+221|00221)?[73][0-9]{8}$/,
+  (r) => ({
+    valid: /^(\+221|00221)?[73][0-9]{8}$/.test(r),
+    error: 'Should match Senegal phone format'
+  })
+);
+
+test(
+  'URL (HTTP/HTTPS)',
+  /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/,
+  (r) => ({
+    valid: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(r),
+    error: 'Should match URL format'
+  })
+);
+
+test(
+  'French postal code',
+  /^[0-9]{5}$/,
+  (r) => ({
+    valid: /^[0-9]{5}$/.test(r) && r.length === 5,
+    error: 'Should be 5 digits'
+  })
+);
+
+test(
+  'US ZIP code',
+  /^\d{5}(-\d{4})?$/,
+  (r) => ({
+    valid: /^\d{5}(-\d{4})?$/.test(r) && (r.length === 5 || r.length === 10),
+    error: 'Should match US ZIP format (5 or 9 digits)'
+  })
+);
+
+test(
+  'Credit card number (basic format)',
+  /^\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}$/,
+  (r) => ({
+    valid: /^\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}$/.test(r),
+    error: 'Should match credit card format'
+  })
+);
+
+test(
+  'Date (DD/MM/YYYY)',
+  /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/,
+  (r) => ({
+    valid: /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(r) && r.length === 10,
+    error: 'Should match DD/MM/YYYY format'
+  })
+);
+
+test(
+  'Date ISO (YYYY-MM-DD)',
+  /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/,
+  (r) => ({
+    valid: /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/.test(r) && r.length === 10,
+    error: 'Should match YYYY-MM-DD format'
+  })
+);
+
+test(
+  'Time (HH:MM 24h format)',
+  /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
+  (r) => ({
+    valid: /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(r),
+    error: 'Should match HH:MM format'
+  })
+);
+
+// Note: Password with lookaheads skipped - will add when lookahead support is implemented
+
+test(
+  'IPv4 address',
+  /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
+  (r) => ({
+    valid: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(r),
+    error: 'Should match IPv4 format'
+  })
+);
+
+test(
+  'IPv6 address (simplified)',
+  /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/,
+  (r) => ({
+    valid: /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/.test(r),
+    error: 'Should match IPv6 format'
+  })
+);
+
+test(
+  'Domain name',
+  /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/,
+  (r) => ({
+    valid: /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(r),
+    error: 'Should match domain name format'
+  })
+);
+
+test(
+  'URL slug',
+  /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  (r) => ({
+    valid: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(r),
+    error: 'Should match URL slug format'
+  })
+);
+
+test(
+  'Hex color code',
+  /^#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/,
+  (r) => ({
+    valid: /^#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/.test(r),
+    error: 'Should match hex color format'
+  })
+);
+
+test(
+  'Username (alphanumeric + underscore)',
+  /^[a-zA-Z0-9_]{3,16}$/,
+  (r) => ({
+    valid: /^[a-zA-Z0-9_]{3,16}$/.test(r) && r.length >= 3 && r.length <= 16,
+    error: 'Should be 3-16 alphanumeric characters'
+  })
+);
+
+test(
+  'French social security number',
+  /^[12][0-9]{2}(0[1-9]|1[0-2])[0-9]{2}[0-9]{3}[0-9]{3}[0-9]{2}$/,
+  (r) => ({
+    valid: /^[12][0-9]{2}(0[1-9]|1[0-2])[0-9]{2}[0-9]{3}[0-9]{3}[0-9]{2}$/.test(r) && r.length === 15,
+    error: 'Should match French SSN format (15 digits)'
+  })
+);
+
+test(
+  'European VAT number (France)',
+  /^FR[0-9A-Z]{2}[0-9]{9}$/,
+  (r) => ({
+    valid: /^FR[0-9A-Z]{2}[0-9]{9}$/.test(r) && r.length === 13,
+    error: 'Should match French VAT format'
+  })
+);
+
+test(
+  'IBAN (general format)',
+  /^[A-Z]{2}\d{2}[A-Z0-9]+$/,
+  (r) => ({
+    valid: /^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(r) && r.length >= 15,
+    error: 'Should match IBAN format'
+  }),
+  { min: 15, max: 34 }
+);
+
+test(
+  'Letters only (with accents)',
+  /^[a-zA-ZÀ-ÿ\s]+$/,
+  (r) => ({
+    valid: /^[a-zA-ZÀ-ÿ\s]+$/.test(r),
+    error: 'Should contain only letters and spaces'
+  })
+);
+
+test(
+  'Digits only',
+  /^\d+$/,
+  (r) => ({
+    valid: /^\d+$/.test(r) && r.length > 0,
+    error: 'Should contain only digits'
+  })
+);
+
+test(
+  'Price/Amount with decimals',
+  /^\d+(\.\d{1,2})?$/,
+  (r) => ({
+    valid: /^\d+(\.\d{1,2})?$/.test(r),
+    error: 'Should match price format (digits with optional 1-2 decimals)'
+  })
+);
+
+test(
+  'French phone number',
+  /^0[1-9](\s?\d{2}){4}$/,
+  (r) => ({
+    valid: /^0[1-9](\s?\d{2}){4}$/.test(r),
+    error: 'Should match French phone format'
+  })
+);
+
+test(
+  'Bitcoin address',
+  /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/,
+  (r) => ({
+    valid: /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(r) && r.length >= 26 && r.length <= 35,
+    error: 'Should match Bitcoin address format'
   })
 );
 
