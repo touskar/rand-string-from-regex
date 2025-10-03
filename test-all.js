@@ -2,9 +2,21 @@
  * COMPREHENSIVE TEST SUITE - ALL TESTS MERGED
  * Source files: test.js, test-complete.js, test-all-operators.js, test-stress.js
  * Total: 227 tests (ALL tests preserved, no deduplication)
+ *
+ * Usage:
+ *   node test-all.js           # Test normal version
+ *   node test-all.js --minified # Test minified version
  */
 
-const randomStringFromRegex = require('./rand-string-from-regex');
+// Determine which version to test based on command line argument
+const useMinified = process.argv.includes('--minified');
+const versionPath = useMinified
+  ? './dist/rand-string-from-regex.min.js'
+  : './rand-string-from-regex';
+
+console.log(`\n🧪 Testing ${useMinified ? 'MINIFIED' : 'NORMAL'} version: ${versionPath}\n`);
+
+const randomStringFromRegex = require(versionPath);
 
 let totalTests = 0;
 let passedTests = 0;
@@ -2297,6 +2309,203 @@ test(
     valid: /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(r) && r.length >= 26 && r.length <= 35,
     error: 'Should match Bitcoin address format'
   })
+);
+
+
+// ==================== ADVANCED FEATURES (v4.1.0) ====================
+console.log('\n\n🔹 ADVANCED FEATURES - v4.1.0');
+console.log('-'.repeat(70));
+
+// Named Backreferences
+test(
+  'Named backreference \\k<name>',
+  '(?<word>\\w+)-\\k<word>',
+  (r) => {
+    const parts = r.split('-');
+    return {
+      valid: parts.length === 2 && parts[0] === parts[1] && /^\w+$/.test(parts[0]),
+      error: 'Should be "word-word" with matching parts'
+    };
+  }
+);
+
+test(
+  'Named backreference with alternation',
+  '(?<color>red|blue|green) \\k<color>',
+  (r) => {
+    const parts = r.split(' ');
+    return {
+      valid: parts.length === 2 && parts[0] === parts[1] && ['red','blue','green'].includes(parts[0]),
+      error: 'Should be "color color" with matching words'
+    };
+  }
+);
+
+test(
+  'Multiple named backreferences',
+  '(?<first>\\w{3})-(?<second>\\d{2})-\\k<first>-\\k<second>',
+  (r) => {
+    const parts = r.split('-');
+    return {
+      valid: parts.length === 4 && parts[0] === parts[2] && parts[1] === parts[3],
+      error: 'Should be "XXX-NN-XXX-NN" with matching parts'
+    };
+  }
+);
+
+// Lookaheads (zero-width, skipped)
+test(
+  'Positive lookahead (?=...)',
+  'test(?=ing)',
+  (r) => ({ valid: r === 'test', error: 'Should be "test" (lookahead is zero-width)' })
+);
+
+test(
+  'Negative lookahead (?!...)',
+  'foo(?!bar)',
+  (r) => ({ valid: r === 'foo', error: 'Should be "foo"' })
+);
+
+test(
+  'Positive lookbehind (?<=...)',
+  '(?<=@)\\w+',
+  (r) => ({ valid: /^\w+$/.test(r), error: 'Should match word chars (lookbehind is zero-width)' })
+);
+
+test(
+  'Negative lookbehind (?<!...)',
+  '(?<!not)here',
+  (r) => ({ valid: r === 'here', error: 'Should be "here"' })
+);
+
+// Unicode Property Escapes
+test(
+  'Unicode property \\p{Letter}',
+  '\\p{Letter}{5}',
+  (r) => ({ valid: /^[A-Za-z]{5}$/.test(r) && r.length === 5, error: 'Should be 5 letters' })
+);
+
+test(
+  'Unicode property \\p{Number}',
+  '\\p{Number}{3}',
+  (r) => ({ valid: /^\d{3}$/.test(r) && r.length === 3, error: 'Should be 3 digits' })
+);
+
+test(
+  'Unicode property \\p{Lowercase_Letter}',
+  '\\p{Lowercase_Letter}{4}',
+  (r) => ({ valid: /^[a-z]{4}$/.test(r) && r.length === 4, error: 'Should be 4 lowercase letters' })
+);
+
+test(
+  'Unicode property \\p{Uppercase_Letter}',
+  '\\p{Uppercase_Letter}{3}',
+  (r) => ({ valid: /^[A-Z]{3}$/.test(r) && r.length === 3, error: 'Should be 3 uppercase letters' })
+);
+
+test(
+  'Unicode property \\p{Hex_Digit}',
+  '\\p{Hex_Digit}{6}',
+  (r) => ({ valid: /^[0-9A-Fa-f]{6}$/.test(r) && r.length === 6, error: 'Should be 6 hex digits' })
+);
+
+test(
+  'Unicode property short form \\p{L}',
+  '\\p{L}{4}',
+  (r) => ({ valid: /^[A-Za-z]{4}$/.test(r) && r.length === 4, error: 'Should be 4 letters' })
+);
+
+test(
+  'Unicode property short form \\p{N}',
+  '\\p{N}{3}',
+  (r) => ({ valid: /^\d{3}$/.test(r) && r.length === 3, error: 'Should be 3 numbers' })
+);
+
+test(
+  'Negated unicode property \\P{Number}',
+  '\\P{Number}{5}',
+  (r) => ({ valid: !/\d/.test(r) && r.length === 5, error: 'Should be 5 non-digits' })
+);
+
+test(
+  'Unicode script \\p{Greek}',
+  '\\p{Greek}{3}',
+  (r) => ({ valid: r.length === 3, error: 'Should be 3 Greek characters' })
+);
+
+test(
+  'Unicode script \\p{Latin}',
+  '\\p{Latin}{5}',
+  (r) => ({ valid: /^[A-Za-z]{5}$/.test(r), error: 'Should be 5 Latin letters' })
+);
+
+// Conditional Patterns
+test(
+  'Conditional pattern (?(1)yes|no) - condition true',
+  '(a)(?(1)b|c)',
+  (r) => ({ valid: r === 'ab', error: 'Should be "ab" when group 1 exists' })
+);
+
+test(
+  'Conditional pattern with named group',
+  '(?<test>x)?(?(test)y|z)',
+  (r) => ({ valid: r === 'xy' || r === 'z', error: 'Should be "xy" or "z"' })
+);
+
+test(
+  'Conditional pattern - complex',
+  '(\\d+)?(?(1)-[a-z]+|[A-Z]+)',
+  (r) => ({
+    valid: /^\d+-[a-z]+$/.test(r) || /^[A-Z]+$/.test(r),
+    error: 'Should match conditional branches'
+  })
+);
+
+// Atomic Groups
+test(
+  'Atomic group (?>...)',
+  '(?>abc)def',
+  (r) => ({ valid: r === 'abcdef', error: 'Should be "abcdef"' })
+);
+
+test(
+  'Atomic group with alternation',
+  '(?>red|blue)car',
+  (r) => ({ valid: r === 'redcar' || r === 'bluecar', error: 'Should be "redcar" or "bluecar"' })
+);
+
+// Complex combinations
+test(
+  'Named backref + lookahead',
+  '(?<id>\\d{3})(?=-)\\k<id>',
+  (r) => {
+    const match = r.match(/^(\d{3})(\d{3})$/);
+    return {
+      valid: match && match[1] === match[2],
+      error: 'Should be "NNN NNN" (lookahead skipped, backref matched)'
+    };
+  }
+);
+
+test(
+  'Unicode property + conditional',
+  '(\\p{L}+)?(?(1)!|\\?)',
+  (r) => ({
+    valid: /^[A-Za-z]+!$/.test(r) || r === '?',
+    error: 'Should end with ! or be just ?'
+  })
+);
+
+test(
+  'All advanced features combined',
+  '(?<word>\\p{L}{3})(?=-)\\k<word>(?(word)!|)',
+  (r) => {
+    const match = r.match(/^([A-Za-z]{3})([A-Za-z]{3})!$/);
+    return {
+      valid: match && match[1] === match[2],
+      error: 'Should be "XXX XXX!" with matching letter groups'
+    };
+  }
 );
 
 

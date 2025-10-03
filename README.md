@@ -12,9 +12,24 @@ Generate random strings that match a regular expression pattern. Works in both N
 - **Universal** - Works in Node.js and browsers
 - **Smart validation** - Pre-validates impossible constraints before generation
 - **Priority system** - Fixed-length patterns take priority over options
-- **Full regex support** - Character classes, quantifiers, groups, alternation, backreferences, escapes
-- **Test coverage** - 292 comprehensive tests, 100% passing
+- **Full regex support** - Character classes, quantifiers, groups, alternation, backreferences, escapes, named groups, conditionals, lookarounds, Unicode properties
+- **Test coverage** - 317 comprehensive tests, 100% passing
 - **Git hooks** - Husky integration ensures tests pass on commit/push
+
+## Live Demo
+
+Try the library in your browser with 32+ interactive examples:
+
+- **[Open Live Demo](https://htmlpreview.github.io/?https://github.com/touskar/rand-string-from-regex/blob/main/demo.html)** - Hosted via htmlpreview.github.io
+- **Local Demo** - Open `demo.html` in your browser after cloning the repo
+
+The demo includes:
+- Basic patterns (digits, letters, character ranges)
+- Real-world patterns (emails, phones, UUIDs, credit cards, etc.)
+- v4.0.0 advanced features (named backreferences, Unicode properties, conditionals)
+- Quantifiers & alternation examples
+- Complex combinations (passwords, MAC addresses, Bitcoin addresses)
+- Custom pattern input with quick examples
 
 ## Installation
 
@@ -26,15 +41,97 @@ npm install rand-string-from-regex
 
 ### Browser
 
+**Local files:**
 ```html
+<!-- Development version (31KB) -->
 <script src="rand-string-from-regex.js"></script>
+
+<!-- Minified version (14KB, 55% smaller) - RECOMMENDED -->
+<script src="dist/rand-string-from-regex.min.js"></script>
 ```
 
-Or use a CDN:
+**CDN (automatically serves minified version):**
+```html
+<!-- unpkg CDN -->
+<script src="https://unpkg.com/rand-string-from-regex"></script>
 
+<!-- jsDelivr CDN -->
+<script src="https://cdn.jsdelivr.net/npm/rand-string-from-regex"></script>
+
+<!-- Specific version (recommended for production) -->
+<script src="https://unpkg.com/rand-string-from-regex@4.0.0"></script>
+```
+
+**Note:** CDN URLs automatically serve the minified version (`dist/rand-string-from-regex.min.js`) thanks to the `unpkg`, `jsdelivr`, and `browser` fields in `package.json`.
+
+## Package Distribution Strategy
+
+This library provides **two versions** optimized for different use cases:
+
+### 1. Normal Version (31KB)
+- **File:** `rand-string-from-regex.js`
+- **Use case:** Node.js projects, development, debugging
+- **Loaded by:** `require('rand-string-from-regex')` in Node.js
+
+### 2. Minified Version (14KB, 55% smaller)
+- **File:** `dist/rand-string-from-regex.min.js`
+- **Use case:** Browsers, CDN delivery, production
+- **Loaded by:** CDN links, browser `<script>` tags
+
+### How It Works
+
+The `package.json` configuration determines which version is served:
+
+```json
+{
+  "main": "rand-string-from-regex.js",              // Node.js → Normal (31KB)
+  "unpkg": "dist/rand-string-from-regex.min.js",    // unpkg CDN → Minified (14KB)
+  "jsdelivr": "dist/rand-string-from-regex.min.js", // jsDelivr CDN → Minified (14KB)
+  "browser": "dist/rand-string-from-regex.min.js"   // Bundlers → Minified (14KB)
+}
+```
+
+### CDN Options
+
+**Recommended (pinned version for production):**
+```html
+<script src="https://unpkg.com/rand-string-from-regex@4.0.0"></script>
+```
+Version locked (safer for production)
+Automatically serves minified (14KB)
+
+**Latest version (auto-updates):**
 ```html
 <script src="https://unpkg.com/rand-string-from-regex"></script>
 ```
+Always serves latest version
+Automatically serves minified (14KB)
+
+**Alternative CDN (jsDelivr):**
+```html
+<!-- Latest -->
+<script src="https://cdn.jsdelivr.net/npm/rand-string-from-regex"></script>
+
+<!-- Pinned version -->
+<script src="https://cdn.jsdelivr.net/npm/rand-string-from-regex@4.0.0"></script>
+```
+
+**Debug mode (normal version via CDN):**
+```html
+<script src="https://unpkg.com/rand-string-from-regex@4.0.0/rand-string-from-regex.js"></script>
+```
+Loads normal version (31KB) - only use for debugging
+
+### Distribution Summary
+
+| Environment | Version Used | How |
+|-------------|-------------|-----|
+| Node.js `require()` | Normal (31KB) | `"main"` field |
+| unpkg CDN | Minified (14KB) | `"unpkg"` field |
+| jsDelivr CDN | Minified (14KB) | `"jsdelivr"` field |
+| Browser builds (webpack) | Minified (14KB) | `"browser"` field |
+
+**Result:** CDN users automatically get the optimized 14KB minified version! 🚀
 
 ## Usage
 
@@ -62,8 +159,10 @@ console.log(caseInsensitive); // => "HeLLo" or "hello" or "HELLO"
 
 ### Browser
 
+See `demo.html` for a complete working example with all v4.0.0 features.
+
 ```html
-<script src="rand-string-from-regex.js"></script>
+<script src="dist/rand-string-from-regex.min.js"></script>
 <script>
   // Generate a random username
   const username = randomStringFromRegex('[a-zA-Z][a-zA-Z0-9_]{4,15}');
@@ -72,6 +171,10 @@ console.log(caseInsensitive); // => "HeLLo" or "hello" or "HELLO"
   // Generate a hex color
   const color = randomStringFromRegex('#[0-9A-Fa-f]{6}');
   console.log(color); // => "#3a7f2c"
+
+  // Named backreferences (v4.0.0)
+  const repeated = randomStringFromRegex('(?<word>\\w{3})-\\k<word>');
+  console.log(repeated); // => "abc-abc"
 </script>
 ```
 
@@ -215,6 +318,47 @@ randomStringFromRegex('(\\w+)@(\\w+)\\.\\2');
 // Complex pattern
 randomStringFromRegex('(\\d{2})-(\\w{2})-\\1');
 // => "42-ab-42"
+
+// Named groups and backreferences
+randomStringFromRegex('(?<word>\\w{3})-\\k<word>');
+// => "abc-abc" (named group captured and repeated)
+
+// Multiple named groups
+randomStringFromRegex('(?<user>\\w+)@(?<domain>\\w+)\\.\\k<domain>');
+// => "john@example.example"
+```
+
+### Advanced Features (v4.0.0+)
+
+```javascript
+// Unicode properties
+randomStringFromRegex('\\p{Letter}{5}');
+// => "aBcDe" (5 letters)
+
+randomStringFromRegex('\\p{Greek}{3}');
+// => "ΑΒΓ" (3 Greek letters)
+
+randomStringFromRegex('\\p{Number}{4}');
+// => "1234" (4 numbers)
+
+// Conditional patterns
+randomStringFromRegex('(?<test>x)?(?(test)y|z)');
+// => "xy" or "z" (if 'test' group matched, use 'y', else 'z')
+
+randomStringFromRegex('(\\d+)?(?(1)-[a-z]+|[A-Z]+)');
+// => "123-abc" or "ABC"
+
+// Lookaheads (zero-width assertions)
+randomStringFromRegex('(?<id>\\d{3})(?=-)\\k<id>');
+// => "123123" (lookahead doesn't consume the '-')
+
+// Combined advanced features
+randomStringFromRegex('(?<word>\\p{L}{3})(?=-)\\k<word>(?(word)!|)');
+// => "abc-abc!" (named group + unicode + lookahead + conditional)
+
+// Atomic groups
+randomStringFromRegex('(?>abc|ab)def');
+// => "abcdef" (atomic groups prevent backtracking)
 ```
 
 ### Real-World Patterns
@@ -393,7 +537,11 @@ randomStringFromRegex(/[abc]{4}/i);
 - `^pattern1$|^pattern2$` - Top-level alternation
 
 ### Backreferences
-- `\1`, `\2`, ..., `\9` - Reference to captured group (matches the same text)
+- `\1`, `\2`, ..., `\9` - Numeric backreference to captured group
+- `\k<name>` - Named backreference to named capturing group
+
+### Named Groups
+- `(?<name>...)` - Named capturing group
 
 ### Anchors
 - `^` - Start of string (stripped during generation)
@@ -401,13 +549,28 @@ randomStringFromRegex(/[abc]{4}/i);
 - `\b` - Word boundary (zero-width)
 - `\B` - Non-word boundary (zero-width)
 
-### Lookaheads & Lookbehinds
-- `(?=...)` - Positive lookahead (skipped)
-- `(?!...)` - Negative lookahead (skipped)
-- `(?<=...)` - Positive lookbehind (skipped)
-- `(?<!...)` - Negative lookbehind (skipped)
+### Lookarounds (Assertions)
+- `(?=...)` - Positive lookahead (zero-width)
+- `(?!...)` - Negative lookahead (zero-width)
+- `(?<=...)` - Positive lookbehind (zero-width)
+- `(?<!...)` - Negative lookbehind (zero-width)
 
-**Note:** Lookaheads/lookbehinds are zero-width and don't generate characters.
+**Note:** Lookarounds are zero-width assertions and don't generate characters.
+
+### Unicode Property Escapes
+- `\p{Letter}` or `\p{L}` - Any letter
+- `\p{Number}` or `\p{N}` - Any number
+- `\p{Punctuation}` or `\p{P}` - Any punctuation
+- `\p{Greek}` - Greek letters
+- `\p{Cyrillic}` - Cyrillic letters
+- `\P{Property}` - Negated property (any character NOT in the property)
+
+### Conditional Patterns
+- `(?(1)yes|no)` - If group 1 matched, use "yes" pattern, else "no"
+- `(?(name)yes|no)` - If named group matched, use "yes" pattern, else "no"
+
+### Atomic Groups
+- `(?>...)` - Atomic (possessive) group - treated as non-capturing for generation
 
 ## Pattern Length Priority System
 
@@ -416,20 +579,20 @@ randomStringFromRegex(/[abc]{4}/i);
 ### Fixed Length vs Options
 
 ```javascript
-// ✅ Pattern generates exactly 4 digits - works
+// Pattern generates exactly 4 digits - works
 randomStringFromRegex('\\d{4}');
 // => "1234" (exactly 4 characters)
 
-// ❌ Conflicting constraint - throws error
+// Conflicting constraint - throws error
 randomStringFromRegex('\\d{4}', { min: 10 });
 // Error: "Regex generates exactly 4 characters (fixed length),
 //         but min constraint is 10. Regex length takes priority."
 
-// ✅ Compatible constraint - works
+// Compatible constraint - works
 randomStringFromRegex('\\d{4}', { min: 4, max: 4 });
 // => "5678" (options match pattern's exact length)
 
-// ✅ Variable-length pattern with options - works
+// Variable-length pattern with options - works
 randomStringFromRegex('\\d+', { min: 10, max: 20 });
 // => "12345678901234" (options control variable parts)
 ```
@@ -467,12 +630,17 @@ randomStringFromRegex('hello', { min: 10 });
 
 ## Testing
 
-The library includes a comprehensive test suite with **292 tests** covering:
+The library includes a comprehensive test suite with **317 tests** covering:
 - Basic patterns and literals
 - All quantifier types (greedy and lazy)
 - Character classes and escape sequences
-- Groups, alternation, and backreferences
-- Real-world patterns (emails, phones, UUIDs)
+- Groups, alternation, and backreferences (numeric and named)
+- Named groups and named backreferences
+- Unicode property escapes
+- Conditional patterns
+- Lookarounds (lookaheads and lookbehinds)
+- Atomic groups
+- Real-world patterns (emails, phones, UUIDs, IBANs, credit cards, etc.)
 - Length constraints and priority validation
 - Transform function
 - Regex flags/modifiers (i, s)
@@ -481,10 +649,15 @@ The library includes a comprehensive test suite with **292 tests** covering:
 
 Run tests:
 ```bash
+# Test both normal and minified versions
 npm test
+
+# Test specific version
+npm run test:normal
+npm run test:minified
 ```
 
-Expected output: **292/292 tests passing (100%)** ✅
+Expected output: **317/317 tests passing (100%)** for both versions ✅
 
 ## Development
 
@@ -492,18 +665,31 @@ Expected output: **292/292 tests passing (100%)** ✅
 
 This project uses [Husky](https://typicode.github.io/husky/) to ensure code quality:
 
-- **pre-push hook**: Runs all 292 tests before allowing pushes
+- **pre-commit hook**: Automatically minifies `rand-string-from-regex.js` to `dist/rand-string-from-regex.min.js` (31KB → 14KB, 55% smaller)
+- **pre-push hook**: Re-minifies and runs all 317 tests on both normal and minified versions
 
-If any test fails, the push is blocked. This ensures only tested code reaches the repository.
+**Workflow:**
+1. On commit: Minified version is auto-generated and added to the commit
+2. On push: Both versions are tested (normal + minified) to ensure consistency
+3. If any test fails, the push is blocked
+
+This ensures only tested code reaches the repository and both versions work identically.
 
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (both normal and minified versions)
 npm test
 
-# View test output with details
+# Test normal version only
+npm run test:normal
+# or
 node test-all.js
+
+# Test minified version only
+npm run test:minified
+# or
+node test-all.js --minified
 ```
 
 ### Installing Git Hooks
@@ -537,16 +723,6 @@ randomStringFromRegex('\\d{3}', {min: 10});
 - Intelligent length distribution eliminates most retries
 - More efficient AST-based generation
 
-## Limitations
-
-The following advanced regex features are not supported:
-
-- **Named backreferences** (`\k<name>`) - Infrastructure ready, coming in v4.1.0
-- **Lookaheads/Lookbehinds** (`(?=...)`, `(?!...)`, `(?<=...)`, `(?<!...)`) - These are skipped (don't generate characters)
-- **Unicode property escapes** (`\p{Letter}`, `\p{Number}`)
-- **Conditional patterns** (`(?(1)yes|no)`)
-- **Atomic groups** (`(?>...)`)
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -571,12 +747,20 @@ MIT © [Your Name]
 
 ### v4.0.0 (2025-10-03) - Major Architectural Redesign 🎉
 - **NEW**: Complete AST-based architecture for accurate generation
+- **NEW**: Named capturing groups (`(?<name>...)`) with full support
+- **NEW**: Named backreferences (`\k<name>`) - reference named groups
+- **NEW**: Unicode property escapes (`\p{Letter}`, `\p{Greek}`, `\p{Number}`, etc.)
+- **NEW**: Conditional patterns (`(?(1)yes|no)`, `(?(name)yes|no)`)
+- **NEW**: Lookarounds - lookaheads and lookbehinds (`(?=...)`, `(?!...)`, `(?<=...)`, `(?<!...)`)
+- **NEW**: Atomic groups (`(?>...)`) for possessive matching
 - **NEW**: Backreference support (`\1`, `\2`, etc.) with correct group numbering
 - **NEW**: Intelligent length distribution across variable parts
 - **NEW**: Pre-validation of impossible constraints
 - **NEW**: Fixed-length patterns take absolute priority over options (e.g., `\d{4}` with `{min:10}` throws error)
-- **NEW**: Husky git hooks integration - auto-run tests on push
-- **NEW**: 42 additional complex test cases for v4 features
+- **NEW**: Husky git hooks integration - auto-minify on commit, auto-test both versions on push
+- **NEW**: Automatic minification with Terser (31KB → 14KB, 55% smaller) to `dist/rand-string-from-regex.min.js`
+- **NEW**: Dual testing system - tests run on both normal and minified versions to ensure consistency
+- **NEW**: 67 additional test cases for v4 advanced features (42 complex + 25 advanced feature tests)
 - **NEW**: 24 real-world pattern tests (emails, phones, IBANs, credit cards, dates, etc.)
 - **FIXED**: True lazy/greedy behavior (deterministic, not probability-based)
 - **FIXED**: Hex/unicode escapes no longer conflict with escape sequences
@@ -585,7 +769,8 @@ MIT © [Your Name]
 - **FIXED**: Infinite loop prevention for nested quantifiers with zero-length elements
 - **FIXED**: Length distribution bug causing off-by-one errors with exact min=max constraints
 - **FIXED**: Backreference group numbering for nested capturing groups
-- **IMPROVED**: 292/292 tests passing (100%) - all edge cases resolved
+- **FIXED**: Quantified named groups now properly capture for conditionals and backreferences
+- **IMPROVED**: 317/317 tests passing (100%) - all edge cases resolved
 - **IMPROVED**: Better error messages for impossible constraints
 - **PERFORMANCE**: 20000x faster for impossible constraint detection
 - 100% backward compatible with v3.0.0
@@ -600,7 +785,7 @@ MIT © [Your Name]
 - **FIXED**: Unicode ranges in character classes (`[\u0041-\u005A]` now works!)
 - **FIXED**: Negated multi-range character classes (`[^a-zA-Z0-9]` now works!)
 - **FIXED**: Escaped special chars in character classes (`[\[\]\(\)]` now works!)
-- **NEW**: Comprehensive test suite (292 tests total, **100% passing**)
+- **NEW**: Comprehensive test suite (250 base tests, **100% passing**)
 - Supports all major JavaScript regex operators
 - Complete documentation with examples for every feature
 

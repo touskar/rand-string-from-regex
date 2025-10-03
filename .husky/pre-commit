@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Create dist directory if it doesn't exist
+mkdir -p dist
+
+# Minify the main file
+npx terser rand-string-from-regex.js -c -m -o dist/rand-string-from-regex.min.js
+
+# Add the minified file to the commit
+git add dist/rand-string-from-regex.min.js

@@ -140,9 +140,57 @@ function tokenize(pattern) {
       const isNonCapturing = groupContent.startsWith('?:');
       const isNamed = groupContent.startsWith('?<');
 
+      // Lookaheads and lookbehinds (zero-width assertions)
+      const isLookahead = groupContent.startsWith('?=') || groupContent.startsWith('?!');
+      const isLookbehind = groupContent.startsWith('?<=') || groupContent.startsWith('?<!');
+      const isAtomic = groupContent.startsWith('?>');
+
+      if (isLookahead || isLookbehind) {
+        // Skip lookaheads/lookbehinds - they don't generate characters
+        tokens.push({
+          type: 'lookaround',
+          subtype: isLookahead ? 'lookahead' : 'lookbehind',
+          positive: groupContent[1] === '=' || groupContent[2] === '=',
+          startIndex: i,
+          endIndex: groupEnd + 1
+        });
+        i = groupEnd + 1;
+        continue;
+      }
+
+      if (isAtomic) {
+        // Atomic groups - treat as non-capturing group for generation
+        tokens.push({
+          type: 'group',
+          capturing: false,
+          atomic: true,
+          content: groupContent.substring(2),
+          startIndex: i,
+          endIndex: groupEnd + 1
+        });
+        i = groupEnd + 1;
+        continue;
+      }
+
+      // Conditional patterns (?(1)yes|no) or (?(name)yes|no)
+      const conditionalMatch = groupContent.match(/^\?\(([^)]+)\)(.+)/);
+      if (conditionalMatch) {
+        const condition = conditionalMatch[1];
+        const branches = conditionalMatch[2];
+        tokens.push({
+          type: 'conditional',
+          condition: /^\d+$/.test(condition) ? parseInt(condition) : condition,
+          content: branches,
+          startIndex: i,
+          endIndex: groupEnd + 1
+        });
+        i = groupEnd + 1;
+        continue;
+      }
+
       tokens.push({
         type: 'group',
-        capturing: !isNonCapturing && !isNamed,
+        capturing: !isNonCapturing && !isLookahead && !isLookbehind && !isAtomic,
         name: isNamed ? extractGroupName(groupContent) : null,
         content: isNonCapturing ? groupContent.substring(2) :
                  isNamed ? groupContent.substring(groupContent.indexOf('>') + 1) :
@@ -253,7 +301,10 @@ function buildSequence(tokens) {
       const quantifier = tokens[i + 1];
       ast.children.push({
         type: 'quantified',
-        element: token.type === 'group' ? buildAST(tokenize(token.content)) : token,
+        element: token.type === 'group' ? {
+          ...token,
+          ast: buildAST(tokenize(token.content))
+        } : token,
         quantifier: quantifier
       });
       i += 2;
@@ -347,6 +398,16 @@ function calculateLengthInfo(ast) {
     // Backreferences are variable length (depends on captured group)
     // We assume 0-10 for calculation purposes
     return { min: 0, max: 10, fixed: false };
+  }
+
+  if (ast.type === 'lookaround') {
+    // Lookarounds are zero-width assertions
+    return { min: 0, max: 0, fixed: true };
+  }
+
+  if (ast.type === 'unicode-property') {
+    // Unicode properties generate 1 character
+    return { min: 1, max: 1, fixed: true };
   }
 
   return { min: 0, max: 0, fixed: true };
@@ -456,7 +517,22 @@ function generateFromAST(ast, targetLength, flags, capturedGroups, groupIndex = 
   }
 
   if (ast.type === 'backreference') {
-    return capturedGroups[ast.index] || '';
+    // Support both numeric (\1) and named (\k<name>) backreferences
+    const key = ast.name || ast.index;
+    return capturedGroups[key] || '';
+  }
+
+  if (ast.type === 'lookaround') {
+    // Lookaheads and lookbehinds are zero-width - don't generate characters
+    return '';
+  }
+
+  if (ast.type === 'unicode-property') {
+    return generateUnicodeProperty(ast);
+  }
+
+  if (ast.type === 'conditional') {
+    return generateConditional(ast, targetLength, flags, capturedGroups, groupIndex);
   }
 
   return '';
@@ -805,7 +881,34 @@ function findMatchingParen(pattern, start) {
 function parseEscape(pattern, start) {
   const char = pattern[start + 1];
 
-  // Backreferences (\1, \2, ..., \9)
+  // Named backreferences (\k<name>)
+  if (char === 'k' && pattern[start + 2] === '<') {
+    const closeIndex = pattern.indexOf('>', start + 3);
+    if (closeIndex !== -1) {
+      const name = pattern.substring(start + 3, closeIndex);
+      return {
+        type: 'backreference',
+        name: name,
+        endIndex: closeIndex + 1
+      };
+    }
+  }
+
+  // Unicode property escapes (\p{Property} or \P{Property})
+  if ((char === 'p' || char === 'P') && pattern[start + 2] === '{') {
+    const closeIndex = pattern.indexOf('}', start + 3);
+    if (closeIndex !== -1) {
+      const property = pattern.substring(start + 3, closeIndex);
+      return {
+        type: 'unicode-property',
+        property: property,
+        negated: char === 'P',
+        endIndex: closeIndex + 1
+      };
+    }
+  }
+
+  // Numeric backreferences (\1, \2, ..., \9)
   if (/[1-9]/.test(char)) {
     return {
       type: 'backreference',
@@ -851,6 +954,79 @@ function parseEscape(pattern, start) {
 function extractGroupName(content) {
   const match = content.match(/^\?<([^>]+)>/);
   return match ? match[1] : null;
+}
+
+function generateConditional(ast, targetLength, flags, capturedGroups, groupIndex) {
+  // Conditional pattern: (?(condition)yes|no)
+  // Check if the condition (group number or name) was captured
+  const conditionMet = capturedGroups[ast.condition] !== undefined && capturedGroups[ast.condition] !== '';
+
+  // Parse yes|no branches
+  const branches = ast.content.split('|');
+  const yesBranch = branches[0] || '';
+  const noBranch = branches[1] || '';
+
+  const chosenBranch = conditionMet ? yesBranch : noBranch;
+
+  if (!chosenBranch) return '';
+
+  // Parse and generate the chosen branch
+  const branchAST = parseToAST(chosenBranch);
+  return generateFromAST(branchAST, targetLength, flags, capturedGroups, groupIndex);
+}
+
+function generateUnicodeProperty(ast) {
+  // Unicode property character sets
+  const unicodeCategories = {
+    // General categories
+    'Letter': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+    'L': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+    'Lowercase_Letter': 'abcdefghijklmnopqrstuvwxyz',
+    'Ll': 'abcdefghijklmnopqrstuvwxyz',
+    'Uppercase_Letter': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'Lu': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'Number': '0123456789',
+    'N': '0123456789',
+    'Nd': '0123456789',
+    'Decimal_Number': '0123456789',
+    'Digit': '0123456789',
+    'Punctuation': '!"#%&\'()*,-./:;?@[\\]_{}',
+    'P': '!"#%&\'()*,-./:;?@[\\]_{}',
+    'Space_Separator': ' \t\n\r',
+    'Zs': ' \t',
+    'White_Space': ' \t\n\r\f\v',
+    'Symbol': '$+<=>^`|~',
+    'S': '$+<=>^`|~',
+    'Math_Symbol': '+-=<>',
+    'Sm': '+-=<>',
+
+    // Script names (simplified - just ASCII representatives)
+    'Latin': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+    'Greek': 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩαβγδεζηθικλμνξοπρστυφχψω',
+    'Cyrillic': 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя',
+    'Arabic': 'أبتثجحخدذرزسشصضطظعغفقكلمنهوي',
+    'Han': '一二三四五六七八九十',
+    'Hiragana': 'あいうえおかきくけこさしすせそたちつてとなにぬねの',
+    'Katakana': 'アイウエオカキクケコサシスセソタチツテトナニヌネノ',
+
+    // Binary properties
+    'ASCII': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+    'Alphabetic': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+    'Lowercase': 'abcdefghijklmnopqrstuvwxyz',
+    'Uppercase': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'Hex_Digit': '0123456789ABCDEFabcdef',
+    'ASCII_Hex_Digit': '0123456789ABCDEFabcdef'
+  };
+
+  let chars = unicodeCategories[ast.property] || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+  if (ast.negated) {
+    // \P{Property} - negated
+    const allChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?/~`\'" \t\n\r';
+    chars = allChars.split('').filter(c => !chars.includes(c)).join('');
+  }
+
+  return chars.length > 0 ? chars[Math.floor(Math.random() * chars.length)] : 'a';
 }
 
 // Export

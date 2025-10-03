@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rand-string-from-regex - Browser Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        .header .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        .version-badge {
+            display: inline-block;
+            background: #f5f5f5;
+            color: #666;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-top: 16px;
+            border: 1px solid #e5e5e5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .custom-input-section {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 32px;
+            margin-bottom: 48px;
+        }
+        .custom-input-section h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+        .custom-input-section p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+        .examples-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .example-chip {
+            background: #ffffff;
+            border: 1px solid #d0d0d0;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            color: #1a1a1a;
+        }
+        .example-chip:hover {
+            border-color: #1a1a1a;
+            background: #fafafa;
+        }
+        .category {
+            margin-bottom: 56px;
+        }
+        .category-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1a1a1a;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #1a1a1a;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 20px;
+        }
+        .demo-section {
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 24px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .demo-section:hover {
+            border-color: #c0c0c0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .demo-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1a1a1a;
+        }
+        .description {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+        .pattern {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #fafafa;
+            padding: 10px 12px;
+            border-radius: 4px;
+            border: 1px solid #e5e5e5;
+            margin-bottom: 12px;
+            font-size: 13px;
+            word-break: break-all;
+            color: #1a1a1a;
+        }
+        .result {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #fafafa;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #e5e5e5;
+            margin-top: 12px;
+            min-height: 44px;
+            font-size: 14px;
+            word-break: break-all;
+            color: #1a1a1a;
+        }
+        button {
+            width: 100%;
+            background: #1a1a1a;
+            color: #ffffff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #333;
+        }
+        button:active {
+            background: #000;
+        }
+        .badge {
+            display: inline-block;
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        .footer {
+            text-align: center;
+            padding: 48px 20px;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #e5e5e5;
+            margin-top: 48px;
+        }
+        .footer strong {
+            color: #1a1a1a;
+        }
+        .footer a {
+            color: #1a1a1a;
+            text-decoration: none;
+            border-bottom: 1px solid #d0d0d0;
+        }
+        .footer a:hover {
+            border-bottom-color: #1a1a1a;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>rand-string-from-regex</h1>
+        <p class="subtitle">Comprehensive Browser Demo</p>
+        <span class="version-badge">v4.0.0 • 14KB minified</span>
+    </div>
+
+    <div class="container">
+        <!-- Custom Pattern Input -->
+        <div class="custom-input-section">
+            <h2>Try Your Own Pattern</h2>
+            <p>Enter any regex pattern and generate a random string</p>
+            <input type="text" id="customPattern" placeholder="Enter regex pattern (e.g., \d{3}-\w{4})" value="\d{3}-\w{4}">
+            <button onclick="generateCustom()">Generate</button>
+            <div class="result" id="customResult">-</div>
+
+            <p style="margin-top: 20px; margin-bottom: 8px;">Quick examples:</p>
+            <div class="examples-list">
+                <span class="example-chip" onclick="useExample('[A-Z]{3}-\d{4}')">License Plate</span>
+                <span class="example-chip" onclick="useExample('\\+1-\\d{3}-\\d{3}-\\d{4}')">US Phone</span>
+                <span class="example-chip" onclick="useExample('#[0-9A-Fa-f]{6}')">Hex Color</span>
+                <span class="example-chip" onclick="useExample('\\w+@\\w+\\.\\w{2,3}')">Email</span>
+                <span class="example-chip" onclick="useExample('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')">UUID</span>
+            </div>
+        </div>
+
+        <!-- Category 1: Basic Patterns -->
+        <div class="category">
+            <h2 class="category-title">Basic Patterns</h2>
+            <div class="demo-grid">
+                <div class="demo-section">
+                    <h3>Simple Digits</h3>
+                    <p class="description">Generate 5-digit number</p>
+                    <div class="pattern">\d{5}</div>
+                    <button onclick="gen('result1', '\\d{5}')">Generate</button>
+                    <div class="result" id="result1">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Word Characters</h3>
+                    <p class="description">Random alphanumeric + underscore</p>
+                    <div class="pattern">\w{8}</div>
+                    <button onclick="gen('result2', '\\w{8}')">Generate</button>
+                    <div class="result" id="result2">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Character Range</h3>
+                    <p class="description">Lowercase letters only</p>
+                    <div class="pattern">[a-z]{10}</div>
+                    <button onclick="gen('result3', '[a-z]{10}')">Generate</button>
+                    <div class="result" id="result3">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Mixed Case</h3>
+                    <p class="description">Upper and lowercase letters</p>
+                    <div class="pattern">[A-Za-z]{12}</div>
+                    <button onclick="gen('result4', '[A-Za-z]{12}')">Generate</button>
+                    <div class="result" id="result4">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 2: Real-World Patterns -->
+        <div class="category">
+            <h2 class="category-title">Real-World Patterns</h2>
+            <div class="demo-grid">
+                <div class="demo-section">
+                    <h3>Email Address</h3>
+                    <p class="description">Realistic email pattern</p>
+                    <div class="pattern">[a-z]{5,10}@[a-z]{3,8}\.(com|net|org)</div>
+                    <button onclick="gen('result5', '[a-z]{5,10}@[a-z]{3,8}\\\\.(com|net|org)')">Generate</button>
+                    <div class="result" id="result5">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Phone Number (US)</h3>
+                    <p class="description">Format: (XXX) XXX-XXXX</p>
+                    <div class="pattern">\(\d{3}\) \d{3}-\d{4}</div>
+                    <button onclick="gen('result6', '\\(\\d{3}\\) \\d{3}-\\d{4}')">Generate</button>
+                    <div class="result" id="result6">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Credit Card</h3>
+                    <p class="description">16-digit card number</p>
+                    <div class="pattern">\d{4}-\d{4}-\d{4}-\d{4}</div>
+                    <button onclick="gen('result7', '\\d{4}-\\d{4}-\\d{4}-\\d{4}')">Generate</button>
+                    <div class="result" id="result7">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>UUID v4</h3>
+                    <p class="description">Universally unique identifier</p>
+                    <div class="pattern">[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}</div>
+                    <button onclick="gen('result8', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')">Generate</button>
+                    <div class="result" id="result8">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>URL Slug</h3>
+                    <p class="description">SEO-friendly URL segment</p>
+                    <div class="pattern">[a-z]{3,8}-[a-z]{3,8}-[a-z]{3,6}</div>
+                    <button onclick="gen('result9', '[a-z]{3,8}-[a-z]{3,8}-[a-z]{3,6}')">Generate</button>
+                    <div class="result" id="result9">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Hex Color Code</h3>
+                    <p class="description">CSS color in hex format</p>
+                    <div class="pattern">#[0-9A-Fa-f]{6}</div>
+                    <button onclick="gen('result10', '#[0-9A-Fa-f]{6}')">Generate</button>
+                    <div class="result" id="result10">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Date (DD/MM/YYYY)</h3>
+                    <p class="description">European date format</p>
+                    <div class="pattern">\d{2}/\d{2}/\d{4}</div>
+                    <button onclick="gen('result11', '\\d{2}/\\d{2}/\\d{4}')">Generate</button>
+                    <div class="result" id="result11">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>IPv4 Address</h3>
+                    <p class="description">Internet Protocol v4</p>
+                    <div class="pattern">\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}</div>
+                    <button onclick="gen('result12', '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}')">Generate</button>
+                    <div class="result" id="result12">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 3: Advanced Features (v4.0.0) -->
+        <div class="category">
+            <h2 class="category-title">Advanced Features <span class="badge">v4.0.0</span></h2>
+            <div class="demo-grid">
+                <div class="demo-section">
+                    <h3>Named Backreferences</h3>
+                    <p class="description">Repeat captured named group</p>
+                    <div class="pattern">(?&lt;word&gt;\w{3})-\k&lt;word&gt;</div>
+                    <button onclick="gen('result13', '(?<word>\\w{3})-\\k<word>')">Generate</button>
+                    <div class="result" id="result13">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Numeric Backreferences</h3>
+                    <p class="description">Repeat captured group by number</p>
+                    <div class="pattern">(\d{3})-\1-\1</div>
+                    <button onclick="gen('result14', '(\\d{3})-\\1-\\1')">Generate</button>
+                    <div class="result" id="result14">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Unicode: Greek Letters</h3>
+                    <p class="description">Greek alphabet characters</p>
+                    <div class="pattern">\p{Greek}{8}</div>
+                    <button onclick="gen('result15', '\\p{Greek}{8}')">Generate</button>
+                    <div class="result" id="result15">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Unicode: Cyrillic</h3>
+                    <p class="description">Russian/Cyrillic characters</p>
+                    <div class="pattern">\p{Cyrillic}{10}</div>
+                    <button onclick="gen('result16', '\\p{Cyrillic}{10}')">Generate</button>
+                    <div class="result" id="result16">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Conditional Pattern</h3>
+                    <p class="description">If-then-else logic in regex</p>
+                    <div class="pattern">(?&lt;test&gt;x)?(?(test)y|z)</div>
+                    <button onclick="gen('result17', '(?<test>x)?(?(test)y|z)')">Generate</button>
+                    <div class="result" id="result17">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Lookahead Assertion</h3>
+                    <p class="description">Pattern with zero-width lookahead</p>
+                    <div class="pattern">(?&lt;id&gt;\d{3})(?=-)\k&lt;id&gt;</div>
+                    <button onclick="gen('result18', '(?<id>\\d{3})(?=-)\\k<id>')">Generate</button>
+                    <div class="result" id="result18">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Multiple Named Groups</h3>
+                    <p class="description">Multiple captured groups</p>
+                    <div class="pattern">(?&lt;user&gt;\w+)@(?&lt;domain&gt;\w+)\.\k&lt;domain&gt;</div>
+                    <button onclick="gen('result19', '(?<user>\\w+)@(?<domain>\\w+)\\.\\k<domain>')">Generate</button>
+                    <div class="result" id="result19">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>All Features Combined</h3>
+                    <p class="description">Unicode + Named + Lookahead + Conditional</p>
+                    <div class="pattern">(?&lt;word&gt;\p{L}{3})(?=-)\k&lt;word&gt;(?(word)!|)</div>
+                    <button onclick="gen('result20', '(?<word>\\p{L}{3})(?=-)\\k<word>(?(word)!|)')">Generate</button>
+                    <div class="result" id="result20">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 4: Quantifiers & Alternation -->
+        <div class="category">
+            <h2 class="category-title">Quantifiers & Alternation</h2>
+            <div class="demo-grid">
+                <div class="demo-section">
+                    <h3>Greedy Quantifier (+)</h3>
+                    <p class="description">One or more (greedy)</p>
+                    <div class="pattern">\d+</div>
+                    <button onclick="gen('result21', '\\d+', {min: 5, max: 10})">Generate</button>
+                    <div class="result" id="result21">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Lazy Quantifier (+?)</h3>
+                    <p class="description">One or more (lazy/non-greedy)</p>
+                    <div class="pattern">\d+?</div>
+                    <button onclick="gen('result22', '\\d+?', {min: 5, max: 10})">Generate</button>
+                    <div class="result" id="result22">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Alternation</h3>
+                    <p class="description">Choose from multiple options</p>
+                    <div class="pattern">(red|green|blue|yellow|orange)</div>
+                    <button onclick="gen('result23', '(red|green|blue|yellow|orange)')">Generate</button>
+                    <div class="result" id="result23">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Complex Alternation</h3>
+                    <p class="description">Multiple patterns with alternation</p>
+                    <div class="pattern">(Mr|Mrs|Ms|Dr)\. [A-Z][a-z]{3,8}</div>
+                    <button onclick="gen('result24', '(Mr|Mrs|Ms|Dr)\\.\. [A-Z][a-z]{3,8}')">Generate</button>
+                    <div class="result" id="result24">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Range Quantifier</h3>
+                    <p class="description">Between min and max occurrences</p>
+                    <div class="pattern">[a-z]{5,15}</div>
+                    <button onclick="gen('result25', '[a-z]{5,15}')">Generate</button>
+                    <div class="result" id="result25">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Optional Pattern (?)</h3>
+                    <p class="description">Zero or one occurrence</p>
+                    <div class="pattern">https?://[a-z]+\.com</div>
+                    <button onclick="gen('result26', 'https?://[a-z]+\\.\\.com')">Generate</button>
+                    <div class="result" id="result26">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 5: Complex Combinations -->
+        <div class="category">
+            <h2 class="category-title">Complex Combinations</h2>
+            <div class="demo-grid">
+                <div class="demo-section">
+                    <h3>Password Pattern</h3>
+                    <p class="description">Uppercase, lowercase, digits, symbols</p>
+                    <div class="pattern">[A-Z][a-z]{3,5}[0-9]{2,4}[!@#$%]</div>
+                    <button onclick="gen('result27', '[A-Z][a-z]{3,5}[0-9]{2,4}[!@#$%]')">Generate</button>
+                    <div class="result" id="result27">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Serial Number</h3>
+                    <p class="description">Product serial with checksum</p>
+                    <div class="pattern">SN-\d{4}-[A-Z]{2}-\d{3}</div>
+                    <button onclick="gen('result28', 'SN-\\d{4}-[A-Z]{2}-\\d{3}')">Generate</button>
+                    <div class="result" id="result28">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>License Key</h3>
+                    <p class="description">Software activation key</p>
+                    <div class="pattern">[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}</div>
+                    <button onclick="gen('result29', '[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}')">Generate</button>
+                    <div class="result" id="result29">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>GitHub Commit Hash</h3>
+                    <p class="description">Git SHA-1 hash (short)</p>
+                    <div class="pattern">[a-f0-9]{7}</div>
+                    <button onclick="gen('result30', '[a-f0-9]{7}')">Generate</button>
+                    <div class="result" id="result30">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>MAC Address</h3>
+                    <p class="description">Network hardware address</p>
+                    <div class="pattern">[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}</div>
+                    <button onclick="gen('result31', '[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}')">Generate</button>
+                    <div class="result" id="result31">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Bitcoin Address</h3>
+                    <p class="description">Cryptocurrency wallet address</p>
+                    <div class="pattern">[13][a-km-zA-HJ-NP-Z1-9]{25,34}</div>
+                    <button onclick="gen('result32', '[13][a-km-zA-HJ-NP-Z1-9]{25,34}')">Generate</button>
+                    <div class="result" id="result32">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>rand-string-from-regex v4.0.0</strong></p>
+        <p style="margin: 8px 0;">317 tests passing • Zero dependencies • 14KB minified</p>
+        <p>
+            <a href="https://github.com/touskar/rand-string-from-regex" target="_blank">GitHub</a> •
+            <a href="https://www.npmjs.com/package/rand-string-from-regex" target="_blank">npm</a>
+        </p>
+    </div>
+
+    <!-- Load the minified version (local) -->
+    <script src="dist/rand-string-from-regex.min.js"></script>
+
+    <!-- Alternatively, load from CDN:
+    <script src="https://unpkg.com/rand-string-from-regex"></script>
+    -->
+
+    <script>
+        // Generic generator function
+        function gen(resultId, pattern, options = {}) {
+            try {
+                const result = randomStringFromRegex(pattern, options);
+                document.getElementById(resultId).textContent = result;
+            } catch (e) {
+                document.getElementById(resultId).textContent = `Error: ${e.message}`;
+            }
+        }
+
+        // Custom pattern generator
+        function generateCustom() {
+            const pattern = document.getElementById('customPattern').value;
+            if (!pattern) {
+                document.getElementById('customResult').textContent = 'Please enter a pattern';
+                return;
+            }
+            try {
+                const result = randomStringFromRegex(pattern);
+                document.getElementById('customResult').textContent = result;
+            } catch (e) {
+                document.getElementById('customResult').textContent = `Error: ${e.message}`;
+            }
+        }
+
+        // Use example pattern
+        function useExample(pattern) {
+            document.getElementById('customPattern').value = pattern;
+            generateCustom();
+        }
+
+        // Auto-generate some examples on load
+        window.onload = () => {
+            gen('result1', '\\d{5}');
+            gen('result5', '[a-z]{5,10}@[a-z]{3,8}\\.(com|net|org)');
+            gen('result13', '(?<word>\\w{3})-\\k<word>');
+            gen('result15', '\\p{Greek}{8}');
+            generateCustom();
+        };
+
+        // Allow Enter key to generate custom pattern
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('customPattern').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    generateCustom();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

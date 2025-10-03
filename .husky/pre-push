@@ -1,1 +1,18 @@
-npm test
+#!/bin/sh
+
+# Ensure minified version exists before testing
+echo "📦 Creating minified version..."
+mkdir -p dist
+npx terser rand-string-from-regex.js -c -m -o dist/rand-string-from-regex.min.js || exit 1
+
+# Run tests on both normal and minified versions
+echo ""
+echo "🧪 Running tests on normal version..."
+node test-all.js || exit 1
+
+echo ""
+echo "🧪 Running tests on minified version..."
+node test-all.js --minified || exit 1
+
+echo ""
+echo "✅ All tests passed for both versions!"

@@ -3,8 +3,19 @@
   "version": "4.0.0",
   "description": "Generate random strings that match a regular expression pattern. Zero dependencies, works in Node.js and browsers.",
   "main": "rand-string-from-regex.js",
+  "unpkg": "dist/rand-string-from-regex.min.js",
+  "jsdelivr": "dist/rand-string-from-regex.min.js",
+  "browser": "dist/rand-string-from-regex.min.js",
+  "files": [
+    "rand-string-from-regex.js",
+    "dist/rand-string-from-regex.min.js",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "test": "node test-all.js",
+    "test": "node test-all.js && node test-all.js --minified",
+    "test:normal": "node test-all.js",
+    "test:minified": "node test-all.js --minified",
     "prepare": "husky"
   },
   "repository": {
@@ -30,6 +41,7 @@
   },
   "homepage": "https://github.com/touskar/rand-string-from-regex#readme",
   "devDependencies": {
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "terser": "^5.44.0"
   }
 }
