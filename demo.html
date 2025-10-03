@@ -227,11 +227,13 @@
 
             <p style="margin-top: 20px; margin-bottom: 8px;">Quick examples:</p>
             <div class="examples-list">
-                <span class="example-chip" onclick="useExample('[A-Z]{3}-\d{4}')">License Plate</span>
+                <span class="example-chip" onclick="useExample('[A-Z]{3}-\\d{4}')">License Plate</span>
                 <span class="example-chip" onclick="useExample('\\+1-\\d{3}-\\d{3}-\\d{4}')">US Phone</span>
                 <span class="example-chip" onclick="useExample('#[0-9A-Fa-f]{6}')">Hex Color</span>
                 <span class="example-chip" onclick="useExample('\\w+@\\w+\\.\\w{2,3}')">Email</span>
                 <span class="example-chip" onclick="useExample('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')">UUID</span>
+                <span class="example-chip" onclick="useExample('(\\u{1F44D}|\\u{1F44E}|\\u{2764}|\\u{1F525})')">Random Emoji</span>
+                <span class="example-chip" onclick="useExample('(\\u{2705} Success|\\u{274C} Error|\\u{26A0} Warning)')">Status Emoji</span>
             </div>
         </div>
 
@@ -517,6 +519,60 @@
                     <div class="pattern">[13][a-km-zA-HJ-NP-Z1-9]{25,34}</div>
                     <button onclick="gen('result32', '[13][a-km-zA-HJ-NP-Z1-9]{25,34}')">Generate</button>
                     <div class="result" id="result32">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 6: Unicode & Emoji -->
+        <div class="category">
+            <h2 class="category-title">Unicode & Emoji <span class="badge">v4.0.0</span></h2>
+            <div class="demo-grid">
+                <div class="demo-section">
+                    <h3>Single Emoji</h3>
+                    <p class="description">Generate a specific emoji</p>
+                    <div class="pattern">\u{1F600}</div>
+                    <button onclick="gen('result33', '\\u{1F600}')">Generate</button>
+                    <div class="result" id="result33">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Random Emoji</h3>
+                    <p class="description">Choose from multiple emojis</p>
+                    <div class="pattern">(\u{1F44D}|\u{1F44E}|\u{2764}|\u{1F525})</div>
+                    <button onclick="gen('result34', '(\\u{1F44D}|\\u{1F44E}|\\u{2764}|\\u{1F525})')">Generate</button>
+                    <div class="result" id="result34">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Multiple Emojis</h3>
+                    <p class="description">Generate emoji sequence</p>
+                    <div class="pattern">\u{1F600}\u{1F601}\u{1F602}</div>
+                    <button onclick="gen('result35', '\\u{1F600}\\u{1F601}\\u{1F602}')">Generate</button>
+                    <div class="result" id="result35">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Emoji with Text</h3>
+                    <p class="description">Mix text and emoji</p>
+                    <div class="pattern">Hello \u{1F44B} World</div>
+                    <button onclick="gen('result36', 'Hello \\u{1F44B} World')">Generate</button>
+                    <div class="result" id="result36">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Random Emoji Sequence</h3>
+                    <p class="description">3 random emojis</p>
+                    <div class="pattern">(\u{1F600}|\u{1F602}|\u{1F60D}){3}</div>
+                    <button onclick="gen('result37', '(\\u{1F600}|\\u{1F602}|\\u{1F60D}){3}')">Generate</button>
+                    <div class="result" id="result37">-</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Status with Emoji</h3>
+                    <p class="description">Random status message</p>
+                    <div class="pattern">(\u{2705} Success|\u{274C} Error|\u{26A0} Warning)</div>
+                    <button onclick="gen('result38', '(\\u{2705} Success|\\u{274C} Error|\\u{26A0} Warning)')">Generate</button>
+                    <div class="result" id="result38">-</div>
                 </div>
             </div>
         </div>
