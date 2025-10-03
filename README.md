@@ -263,8 +263,23 @@ randomStringFromRegex('\\x41\\x42\\x43'); // => "ABC"
 // Unicode characters
 randomStringFromRegex('\\u0048\\u0065\\u006C\\u006C\\u006F'); // => "Hello"
 
-// Unicode emoji
+// Unicode emoji (single)
 randomStringFromRegex('\\u{1F600}'); // => "😀"
+
+// Multiple emojis
+randomStringFromRegex('\\u{1F600}\\u{1F601}\\u{1F602}'); // => "😀😁😂"
+
+// Random emoji (via alternation)
+randomStringFromRegex('(\\u{1F44D}|\\u{1F44E}|\\u{2764}|\\u{1F525})'); // => "👍" or "👎" or "❤" or "🔥"
+
+// Emoji with text
+randomStringFromRegex('Hello \\u{1F44B} World'); // => "Hello 👋 World"
+
+// Multiple random emojis
+randomStringFromRegex('(\\u{1F600}|\\u{1F602}|\\u{1F60D}){3}'); // => "😀😍😂"
+
+// Practical example: Status with emoji
+randomStringFromRegex('(\\u{2705} Success|\\u{274C} Error|\\u{26A0} Warning)'); // => "✅ Success"
 
 // Mixed hex and unicode
 randomStringFromRegex('\\x48\\u0065llo'); // => "Hello"
