@@ -1,10 +1,11 @@
 {
   "name": "rand-string-from-regex",
-  "version": "3.0.0",
+  "version": "1.2.0",
   "description": "Generate random strings that match a regular expression pattern. Zero dependencies, works in Node.js and browsers.",
   "main": "rand-string-from-regex.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node test-all.js",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -27,5 +28,8 @@
   "bugs": {
     "url": "https://github.com/touskar/rand-string-from-regex/issues"
   },
-  "homepage": "https://github.com/touskar/rand-string-from-regex#readme"
+  "homepage": "https://github.com/touskar/rand-string-from-regex#readme",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
 }
